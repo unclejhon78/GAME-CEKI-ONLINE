@@ -665,27 +665,40 @@
     }
 
     async function startGame() {
-      if (roomData.players.length < 3) return alert('Minimal 3 pemain untuk memulai!');
-      let deck = createDeck();
-      let players = roomData.players.map(p => ({
-        ...p,
-        hand: deck.splice(0, 7),
-        melds: [],
-        isCeki: false
-      }));
+  if (!roomData || !roomData.players) return alert('Data room belum siap!');
+  
+  // Diubah dari < 3 ke < 2 agar bisa dimainkan/dites berdua
+  if (roomData.players.length < 2) return alert('Minimal 2 pemain untuk memulai!');
 
-      await db.from('rooms').update({
-        game_started: true,
-        deck: deck,
-        discard_pile: [],
-        players: players,
-        turn_index: 0,
-        has_drawn: false,
-        has_discarded: false,
-        is_game_over: false,
-        last_action_notice: 'Permainan Dimulai!'
-      }).eq('id', currentRoomId);
+  let deck = createDeck();
+  let players = roomData.players.map(p => ({
+    ...p,
+    hand: deck.splice(0, 7),
+    melds: [],
+    isCeki: false
+  }));
+
+  try {
+    let { error } = await db.from('rooms').update({
+      game_started: true,
+      deck: deck,
+      discard_pile: [],
+      players: players,
+      turn_index: 0,
+      has_drawn: false,
+      has_discarded: false,
+      is_game_over: false,
+      last_action_notice: 'Permainan Dimulai!'
+    }).eq('id', currentRoomId);
+
+    if (error) {
+      console.error('Error saat start game:', error);
+      alert('Gagal memulai game: ' + error.message);
     }
+  } catch (err) {
+    alert('Terjadi kesalahan koneksi ke server.');
+  }
+}
 
     async function drawCard() {
       if (!roomData || !roomData.game_started || roomData.is_game_over) return alert('Belum mulai!');
