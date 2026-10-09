@@ -151,7 +151,6 @@
 
     .status-banner { font-size: 0.85rem; color: #e0e0e0; font-weight: 600; }
 
-    /* Banner Pengumuman Ceki & Log Aksi */
     .ceki-alert {
       background: linear-gradient(90deg, #d32f2f, #f39c12, #d32f2f);
       color: #fff;
@@ -164,6 +163,7 @@
       display: none;
     }
 
+    /* FITUR 2: BANNER NOTIFIKASI AKSI */
     .action-notice {
       background: rgba(41, 128, 185, 0.9);
       color: #fff;
@@ -374,6 +374,7 @@
     .btn-action.danger { background: #e74c3c; color: #fff; border-color: #c0392b; }
     .btn-action.warning { background: #e67e22; color: #fff; border-color: #d35400; }
 
+    /* Modal Pop-up Hasil Game Over */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -450,8 +451,8 @@
       </div>
     </div>
 
-    <!-- Banner Ceki & Notifikasi Aksi -->
     <div id="cekiBanner" class="ceki-alert"></div>
+    <!-- FITUR 2: ELEMENT NOTIFIKASI AKSI -->
     <div id="actionNotice" class="action-notice"></div>
 
     <div class="poker-table">
@@ -472,7 +473,7 @@
       <div class="player-dock">
         <div id="myMelds" class="melds-container" style="margin-bottom: 5px;"></div>
         
-        <!-- FITUR 3: USERNAME PEMAIN-->
+        <!-- FITUR 3: USERNAME PEMAIN PADA CONTAINER -->
         <div class="zone-title" id="myHandCountTitle" style="color: var(--gold-light);">KARTU TANGAN KAMU</div>
         <div class="hand-cards" id="myHand"></div>
 
@@ -482,7 +483,7 @@
           <button class="btn-action active" onclick="submitMeld()">TURUNKAN SET (TRIS/SERI)</button>
           <button class="btn-action" onclick="discardSelectedCard()">BUANG KARTU</button>
           <button id="goBtn" class="btn-action go" onclick="confirmEndTurn()" style="display:none;">SELESAI GILIRAN (GO) ➔</button>
-          <!-- FITUR 1: DUA MODE TOMBOL CEKI / BATAL CEKI -->
+          <!-- FITUR 1: TOMBOL TOGGLE CEKI / BATAL CEKI -->
           <button id="cekiBtn" class="btn-action danger" onclick="toggleCeki()">DEKLARASI "CEKI!"</button>
         </div>
       </div>
@@ -677,7 +678,7 @@
         has_drawn: false,
         has_discarded: false,
         is_game_over: false,
-        last_action_notice: 'Permainan Dimulai! Giliran Pemain 1.'
+        last_action_notice: 'Permainan Dimulai!'
       }).eq('id', currentRoomId);
     }
 
@@ -707,7 +708,7 @@
       }).eq('id', currentRoomId);
     }
 
-    // FITUR 2: INFORMASI KARTU BUANGAN YANG DIAMBIL
+    /* FITUR 2: NOTIFIKASI RINCIAN KARTU BUANGAN YANG DIAMBIL */
     async function takeFromDiscard(takeIndexFromRight) {
       if (!roomData || !roomData.game_started || roomData.is_game_over) return alert('Belum mulai!');
       const currentPlayer = roomData.players[roomData.turn_index];
@@ -731,9 +732,8 @@
         return p;
       });
 
-      // Format teks kartu yang diambil untuk notifikasi
       let takenCardsText = takenCards.map(c => c.value + c.suit).join(', ');
-      let noticeMsg = `📢 ${currentPlayer.name.toUpperCase()} mengambil ${takenCards.length} kartu buangan: [ ${takenCardsText} ]`;
+      let noticeMsg = `📢 ${currentPlayer.name.toUpperCase()} mengambil kartu buangan: ${takenCardsText}`;
 
       await db.from('rooms').update({ 
         discard_pile: discardPile, 
@@ -774,7 +774,7 @@
       await db.from('rooms').update({ players }).eq('id', currentRoomId);
     }
 
-    // FITUR 1: DEKLARASI & BATALKAN CEKI
+    /* FITUR 1: FUNGSI MEMBATALKAN DEKLARASI CEKI */
     async function toggleCeki() {
       let me = roomData.players.find(p => p.id === myPlayerId);
       let newCekiState = !me.isCeki;
@@ -803,274 +803,3 @@
       let players = roomData.players.map(p => {
         if (p.id === myPlayerId) return { ...p, hand: newHand, melds: newMelds };
         return p;
-      });
-
-      selectedIndices = [];
-      await db.from('rooms').update({ players }).eq('id', currentRoomId);
-    }
-
-    async function discardSelectedCard() {
-      if (!roomData || !roomData.game_started || roomData.is_game_over) return;
-      const currentPlayer = roomData.players[roomData.turn_index];
-      if (currentPlayer.id !== myPlayerId) return alert('Bukan giliran Anda!');
-
-      if (!roomData.has_drawn) {
-        return alert('Anda WAJIB mencangkul atau mengambil kartu dari buangan terlebih dahulu!');
-      }
-
-      if (roomData.has_discarded) {
-        return alert('Anda sudah membuang kartu! Klik tombol SELESAI GILIRAN (GO) untuk menyerahkan giliran.');
-      }
-
-      if (selectedIndices.length !== 1) return alert('Pilih tepat 1 kartu untuk dibuang!');
-
-      let index = selectedIndices[0];
-      let players = JSON.parse(JSON.stringify(roomData.players));
-      let myHand = players[roomData.turn_index].hand;
-      let discarded = myHand.splice(index, 1)[0];
-
-      let discardPile = [...(roomData.discard_pile || []), discarded];
-
-      selectedIndices = [];
-      
-      await db.from('rooms').update({
-        players: players,
-        discard_pile: discardPile,
-        has_discarded: true,
-        last_action_notice: `🗑️ ${currentPlayer.name.toUpperCase()} membuang kartu: ${discarded.value}${discarded.suit}`
-      }).eq('id', currentRoomId);
-    }
-
-    async function confirmEndTurn() {
-      if (!roomData || !roomData.has_discarded) return;
-      
-      let players = roomData.players;
-      let nextTurn = (roomData.turn_index + 1) % players.length;
-
-      await db.from('rooms').update({
-        turn_index: nextTurn,
-        has_drawn: false,
-        has_discarded: false
-      }).eq('id', currentRoomId);
-    }
-
-    async function endGame() {
-      if (!confirm('Yakin ingin mengakhiri permainan sekarang?')) return;
-      
-      await db.from('rooms').update({ is_game_over: true }).eq('id', currentRoomId);
-    }
-
-    async function rematchGame() {
-      document.getElementById('gameOverModal').style.display = 'none';
-      startGame();
-    }
-
-    function renderGame() {
-      if (!roomData) return;
-
-      const isHost = roomData.players[0].id === myPlayerId;
-      document.getElementById('startBtn').style.display = (!roomData.game_started && isHost && !roomData.is_game_over) ? 'inline-block' : 'none';
-      document.getElementById('endGameBtn').style.display = (roomData.game_started && !roomData.is_game_over) ? 'inline-block' : 'none';
-
-      const currentPlayer = roomData.players[roomData.turn_index];
-      const isMyTurn = currentPlayer.id === myPlayerId;
-      
-      let turnText = 'MENUNGGU PEMAIN LAIN...';
-      if (roomData.game_started && !roomData.is_game_over) {
-        if (isMyTurn) {
-          if (!roomData.has_drawn) {
-            turnText = 'GILIRAN ANDA: Cangkul atau Ambil Kartu Buangan dulu!';
-          } else if (!roomData.has_discarded) {
-            turnText = 'GILIRAN ANDA: Pilih 1 kartu lalu klik BUANG KARTU';
-          } else {
-            turnText = 'GILIRAN ANDA: Klik tombol GO untuk oper giliran ke lawan!';
-          }
-        } else {
-          turnText = `GILIRAN: ${currentPlayer.name.toUpperCase()}`;
-        }
-      } else if (roomData.is_game_over) {
-        turnText = 'GAME OVER - TAMPILAN SKOR';
-      }
-      document.getElementById('turnStatus').innerText = turnText;
-
-      // Banner Notifikasi Aksi
-      const noticeDiv = document.getElementById('actionNotice');
-      if (roomData.last_action_notice && roomData.game_started) {
-        noticeDiv.innerText = roomData.last_action_notice;
-        noticeDiv.style.display = 'block';
-      } else {
-        noticeDiv.style.display = 'none';
-      }
-
-      const goBtn = document.getElementById('goBtn');
-      goBtn.style.display = (isMyTurn && roomData.has_discarded && !roomData.is_game_over) ? 'inline-block' : 'none';
-
-      // --- FITUR 1: UPDATE TAMPILAN TOMBOL CEKI / BATAL CEKI ---
-      const me = roomData.players.find(p => p.id === myPlayerId);
-      const cekiBtn = document.getElementById('cekiBtn');
-      if (me && me.isCeki) {
-        cekiBtn.innerText = 'BATALKAN "CEKI!"';
-        cekiBtn.className = 'btn-action warning';
-      } else {
-        cekiBtn.innerText = 'DEKLARASI "CEKI!"';
-        cekiBtn.className = 'btn-action danger';
-      }
-
-      // --- Cek Banner Deklarasi Ceki ---
-      const cekiPlayers = roomData.players.filter(p => p.isCeki);
-      const cekiBanner = document.getElementById('cekiBanner');
-      if (cekiPlayers.length > 0 && !roomData.is_game_over) {
-        const names = cekiPlayers.map(p => p.name.toUpperCase()).join(', ');
-        cekiBanner.innerText = `⚠️ PERHATIAN! PEMAIN: ${names} DEKLARASI CEKI! ⚠️`;
-        cekiBanner.style.display = 'block';
-      } else {
-        cekiBanner.style.display = 'none';
-      }
-
-      // --- Pop-up GameOver ---
-      const modal = document.getElementById('gameOverModal');
-      if (roomData.is_game_over) {
-        modal.style.display = 'flex';
-        document.getElementById('rematchBtn').style.display = isHost ? 'inline-block' : 'none';
-
-        let scoreListHTML = '';
-        let minScore = 9999;
-        let winnerName = '';
-
-        roomData.players.forEach(p => {
-          let pts = p.hand ? p.hand.reduce((sum, c) => sum + c.points, 0) : 0;
-          if (pts < minScore) {
-            minScore = pts;
-            winnerName = p.name.toUpperCase();
-          }
-          scoreListHTML += `
-            <div class="score-item">
-              <span>${p.name.toUpperCase()} (${p.hand ? p.hand.length : 0} Kartu)</span>
-              <span style="font-weight:bold; color:var(--gold-light);">${pts} Poin Sisa</span>
-            </div>
-          `;
-        });
-
-        document.getElementById('winnerTitle').innerText = `PEMENANG: ${winnerName} (Poin Terendah: ${minScore}pt)`;
-        document.getElementById('scoreList').innerHTML = scoreListHTML;
-      } else {
-        modal.style.display = 'none';
-      }
-
-      // --- Render Info & Kartu Lawan ---
-      const oppArea = document.getElementById('opponentsArea');
-      oppArea.innerHTML = '';
-      
-      roomData.players.filter(p => p.id !== myPlayerId).forEach(opp => {
-        let box = document.createElement('div');
-        box.className = 'opponent-box' + (opp.isCeki ? ' is-ceki' : '');
-        
-        let handCount = opp.hand ? opp.hand.length : 0;
-        let cekiTagHTML = opp.isCeki ? '<span class="ceki-tag">CEKI!</span>' : '';
-
-        box.innerHTML = `
-          <div class="opponent-name">${opp.name.toUpperCase()} ${cekiTagHTML}</div>
-          <div class="card-count-badge">🂠 ${handCount} Kartu</div>
-        `;
-
-        let meldsDiv = document.createElement('div');
-        meldsDiv.className = 'melds-container';
-
-        if (opp.melds && opp.melds.length > 0) {
-          opp.melds.forEach(group => {
-            let grpDiv = document.createElement('div');
-            grpDiv.className = 'meld-group';
-            group.forEach(card => grpDiv.appendChild(createCardUI(card)));
-            meldsDiv.appendChild(grpDiv);
-          });
-        } else {
-          meldsDiv.innerHTML = '<span style="font-size:0.65rem; color:#888;">Belum ada set</span>';
-        }
-
-        box.appendChild(meldsDiv);
-        oppArea.appendChild(box);
-      });
-
-      // --- Render Kombinasi Pemain Sendiri ---
-      const myMeldsDiv = document.getElementById('myMelds');
-      myMeldsDiv.innerHTML = '';
-
-      if (me && me.melds && me.melds.length > 0) {
-        me.melds.forEach(group => {
-          let grpDiv = document.createElement('div');
-          grpDiv.className = 'meld-group';
-          group.forEach(card => grpDiv.appendChild(createCardUI(card)));
-          myMeldsDiv.appendChild(grpDiv);
-        });
-      }
-
-      // FITUR 3: MENAMPILKAN USERNAME / NAMA PEMAIN SENDIRI
-      const myHandCount = me && me.hand ? me.hand.length : 0;
-      const myName = me ? me.name.toUpperCase() : 'ANDA';
-      document.getElementById('myHandCountTitle').innerText = `PEMAIN: ${myName} (ANDA) | KARTU TANGAN KAMU (${myHandCount} KARTU)${me && me.isCeki ? ' - Status: CEKI!' : ''}`;
-
-      // --- Render Deck Cangkulan ---
-      const deckZone = document.getElementById('deckZone');
-      const remainingDeck = roomData.deck ? roomData.deck.length : 0;
-      deckZone.innerHTML = `
-        <div class="zone-title">CANGKULAN (${remainingDeck})</div>
-        <div class="card-back" onclick="drawCard()" title="Klik untuk cangkul 1 kartu"></div>
-      `;
-
-      // --- Render Discard Pile ---
-      const discardDiv = document.getElementById('discardPile');
-      discardDiv.innerHTML = '';
-      const pile = roomData.discard_pile || [];
-
-      if (pile.length === 0) {
-        discardDiv.innerHTML = '<span style="font-size:0.75rem; color:#888;">Belum ada buangan</span>';
-      } else {
-        const total = pile.length;
-        pile.forEach((card, idx) => {
-          let el = createCardUI(card);
-          let takeIndexFromRight = total - idx;
-
-          if (takeIndexFromRight <= 7) {
-            el.classList.add('takeable');
-            el.title = `Klik untuk mengambil ${takeIndexFromRight} kartu buangan`;
-            el.onclick = () => takeFromDiscard(takeIndexFromRight);
-          } else {
-            el.classList.add('disabled-discard');
-            el.title = "Kartu buangan lama (Tidak bisa diambil)";
-          }
-
-          discardDiv.appendChild(el);
-        });
-
-        setTimeout(() => {
-          discardDiv.scrollLeft = discardDiv.scrollWidth;
-        }, 50);
-      }
-
-      // --- Render Kartu Tangan Pemain ---
-      const handDiv = document.getElementById('myHand');
-      handDiv.innerHTML = '';
-      if (me && me.hand) {
-        me.hand.forEach((card, idx) => {
-          let el = createCardUI(card);
-          if (selectedIndices.includes(idx)) el.classList.add('selected');
-          el.onclick = () => toggleSelectCard(idx);
-          handDiv.appendChild(el);
-        });
-      }
-    }
-
-    function createCardUI(card) {
-      let div = document.createElement('div');
-      div.className = 'card' + (card.isRed ? ' red' : '');
-      div.innerHTML = `
-        <div class="card-val">${card.value}</div>
-        <div class="card-suit">${card.suit}</div>
-        <div class="card-center-suit">${card.suit}</div>
-        <div class="card-pts">${card.points}pt</div>
-      `;
-      return div;
-    }
-  </script>
-</body>
-</html>
