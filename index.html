@@ -6,407 +6,7 @@
   <title>Ceki Remi Online - Arena Klasik</title>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg-felt: #0d3b2e;
-      --bg-felt-accent: #155d49;
-      --gold: #f39c12;
-      --gold-light: #f1c40f;
-      --panel-bg: rgba(10, 25, 20, 0.85);
-      --card-w: 50px;
-      --card-h: 74px;
-    }
-
-    * {
-      box-sizing: border-box;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Poppins', sans-serif;
-      background: radial-gradient(circle, var(--bg-felt-accent) 0%, var(--bg-felt) 100%);
-      color: #fff;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-    }
-
-    /* ================= LOBBY SCREEN ================= */
-    #lobby {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.4);
-    }
-
-    .logo-container { text-align: center; margin-bottom: 25px; }
-    .logo-container h1 {
-      font-family: 'Cinzel', serif;
-      font-size: 2.8rem;
-      color: var(--gold-light);
-      text-shadow: 0 4px 10px rgba(0,0,0,0.8), 0 0 20px rgba(241, 196, 15, 0.3);
-      margin: 0;
-      letter-spacing: 2px;
-    }
-    .logo-container p { color: #a3b18a; margin-top: 5px; font-size: 0.95rem; }
-
-    .lobby-card {
-      background: var(--panel-bg);
-      border: 2px solid var(--gold);
-      border-radius: 16px;
-      padding: 25px;
-      width: 100%;
-      max-width: 380px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      backdrop-filter: blur(8px);
-    }
-
-    .input-group { margin-bottom: 15px; text-align: left; }
-    .input-group label { display: block; font-size: 0.85rem; color: #ccc; margin-bottom: 5px; }
-    .input-group input {
-      width: 100%;
-      padding: 12px 15px;
-      border-radius: 8px;
-      border: 1px solid #3a5a40;
-      background: rgba(0,0,0,0.5);
-      color: #fff;
-      font-size: 1rem;
-      outline: none;
-    }
-
-    .btn-gold {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold) 100%);
-      color: #1a1a1a;
-      font-weight: 700;
-      font-size: 1.05rem;
-      cursor: pointer;
-      box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
-      margin-bottom: 10px;
-    }
-
-    .btn-outline {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid var(--gold);
-      border-radius: 8px;
-      background: rgba(243, 156, 18, 0.1);
-      color: var(--gold-light);
-      font-weight: 700;
-      font-size: 0.95rem;
-      cursor: pointer;
-    }
-
-    .divider { margin: 15px 0; font-size: 0.8rem; color: #888; display: flex; align-items: center; gap: 10px; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.2); }
-
-    /* ================= GAMEPLAY SCREEN ================= */
-    #game {
-      display: none;
-      flex: 1;
-      flex-direction: column;
-      height: 100vh;
-      max-width: 1100px;
-      margin: 0 auto;
-      width: 100%;
-      position: relative;
-    }
-
-    .game-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 15px;
-      background: var(--panel-bg);
-      border-bottom: 1px solid rgba(243, 156, 18, 0.3);
-      z-index: 20;
-    }
-
-    .header-left, .header-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .room-badge {
-      background: #112a22;
-      border: 1px solid var(--gold);
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      color: var(--gold-light);
-      font-weight: bold;
-    }
-
-    .status-banner { font-size: 0.85rem; color: #e0e0e0; font-weight: 600; }
-
-    .ceki-alert {
-      background: linear-gradient(90deg, #d32f2f, #f39c12, #d32f2f);
-      color: #fff;
-      font-weight: 800;
-      text-align: center;
-      padding: 6px;
-      font-size: 0.9rem;
-      letter-spacing: 1px;
-      animation: blink 1s infinite alternate;
-      display: none;
-    }
-
-    .action-notice {
-      background: rgba(41, 128, 185, 0.9);
-      color: #fff;
-      font-weight: 600;
-      text-align: center;
-      padding: 5px;
-      font-size: 0.8rem;
-      display: none;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    @keyframes blink {
-      from { opacity: 0.8; }
-      to { opacity: 1; transform: scale(1.01); }
-    }
-
-    .poker-table {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 10px;
-      position: relative;
-    }
-
-    .opponents-area { display: flex; justify-content: space-around; gap: 10px; margin-bottom: 5px; }
-
-    .opponent-box {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(243, 156, 18, 0.2);
-      border-radius: 8px;
-      padding: 6px;
-      flex: 1;
-      text-align: center;
-      position: relative;
-    }
-
-    .opponent-box.is-ceki {
-      border: 2px solid #e74c3c;
-      box-shadow: 0 0 10px #e74c3c;
-    }
-
-    .opponent-name { font-size: 0.75rem; color: var(--gold-light); font-weight: bold; }
-    .card-count-badge {
-      display: inline-block;
-      background: rgba(255,255,255,0.15);
-      padding: 1px 6px;
-      border-radius: 10px;
-      font-size: 0.65rem;
-      color: #2ecc71;
-      margin-top: 2px;
-    }
-
-    .ceki-tag {
-      background: #e74c3c;
-      color: #fff;
-      font-size: 0.6rem;
-      padding: 1px 4px;
-      border-radius: 3px;
-      font-weight: bold;
-      margin-left: 4px;
-    }
-
-    .melds-container { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 4px; }
-    .meld-group {
-      display: flex;
-      background: rgba(255, 255, 255, 0.08);
-      padding: 2px;
-      border-radius: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-    }
-    .meld-group .card { width: 32px; height: 48px; font-size: 0.65rem; margin-left: -12px; }
-    .meld-group .card:first-child { margin-left: 0; }
-
-    .table-center {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 15px;
-      margin: auto 0;
-      background: rgba(0, 0, 0, 0.25);
-      border-radius: 20px;
-      padding: 10px 15px;
-      border: 1px dashed rgba(255, 255, 255, 0.15);
-      width: 100%;
-    }
-
-    .deck-zone, .discard-zone { display: flex; flex-direction: column; align-items: center; }
-    .discard-zone { flex: 1; width: 100%; overflow: hidden; }
-    .zone-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; color: #a3b18a; margin-bottom: 4px; }
-
-    .card-back {
-      width: var(--card-w);
-      height: var(--card-h);
-      background: linear-gradient(135deg, #b71c1c 0%, #880e4f 100%);
-      border: 2px solid #fff;
-      border-radius: 6px;
-      box-shadow: -2px 2px 5px rgba(0,0,0,0.5);
-      cursor: pointer;
-    }
-
-    .card {
-      width: var(--card-w);
-      height: var(--card-h);
-      background: #ffffff;
-      color: #111;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 4px;
-      font-weight: bold;
-      position: relative;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .card.red { color: #d32f2f; }
-    .card.selected {
-      transform: translateY(-12px);
-      border: 2px solid var(--gold);
-      box-shadow: 0 0 10px var(--gold-light);
-    }
-
-    .card.takeable {
-      border: 2px solid var(--gold-light);
-      box-shadow: 0 0 8px rgba(241, 196, 15, 0.6);
-    }
-
-    .card.disabled-discard { opacity: 0.45; filter: grayscale(40%); cursor: not-allowed; }
-
-    .card-val { font-size: 0.8rem; line-height: 1; }
-    .card-suit { font-size: 0.9rem; line-height: 1; }
-    .card-center-suit {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 1.2rem;
-      opacity: 0.85;
-    }
-    .card-pts {
-      position: absolute;
-      bottom: 2px; right: 3px;
-      font-size: 0.5rem;
-      background: #f0f0f0;
-      padding: 1px 3px;
-      border-radius: 2px;
-      color: #555;
-    }
-
-    .discard-stack {
-      display: flex;
-      align-items: center;
-      min-height: var(--card-h);
-      max-width: 100%;
-      overflow-x: auto;
-      padding: 5px;
-    }
-
-    .discard-stack .card { margin-left: -24px; flex-shrink: 0; }
-    .discard-stack .card:first-child { margin-left: 0; }
-
-    .player-dock {
-      background: var(--panel-bg);
-      border-top: 2px solid var(--gold);
-      border-radius: 12px 12px 0 0;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .hand-cards {
-      display: flex;
-      justify-content: center;
-      flex-wrap: nowrap;
-      padding: 10px 0;
-      width: 100%;
-      overflow-x: auto;
-    }
-
-    .hand-cards .card { margin-left: -16px; flex-shrink: 0; }
-    .hand-cards .card:first-child { margin-left: 0; }
-
-    .action-bar {
-      display: flex;
-      gap: 6px;
-      margin-top: 5px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .btn-action {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.3);
-      color: #fff;
-      padding: 6px 12px;
-      border-radius: 15px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-action.active { background: var(--gold); color: #000; border-color: var(--gold-light); }
-    .btn-action.go { background: #2ecc71; color: #111; border-color: #27ae60; font-weight: 800; }
-    .btn-action.danger { background: #e74c3c; color: #fff; border-color: #c0392b; }
-    .btn-action.warning { background: #e67e22; color: #fff; border-color: #d35400; }
-
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      padding: 20px;
-    }
-
-    .modal-card {
-      background: var(--panel-bg);
-      border: 2px solid var(--gold);
-      border-radius: 16px;
-      padding: 25px;
-      width: 100%;
-      max-width: 420px;
-      text-align: center;
-    }
-
-    .modal-card h2 { color: var(--gold-light); margin-top: 0; }
-    .score-list { text-align: left; margin: 15px 0; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; }
-    .score-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
-
-    @media (min-width: 768px) {
-      :root { --card-w: 64px; --card-h: 92px; }
-      .card-val { font-size: 1rem; }
-      .card-suit { font-size: 1.1rem; }
-      .card-center-suit { font-size: 1.6rem; }
-      .discard-stack .card { margin-left: -30px; }
-      .hand-cards .card { margin-left: -20px; }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -452,35 +52,65 @@
     <div id="cekiBanner" class="ceki-alert"></div>
     <div id="actionNotice" class="action-notice"></div>
 
-    <div class="poker-table">
-      <div class="opponents-area" id="opponentsArea"></div>
+    <div class="main-layout">
+      <!-- POKER TABLE AREA -->
+      <div class="poker-table">
+        <div class="opponents-area" id="opponentsArea"></div>
 
-      <div class="table-center">
-        <div class="deck-zone" id="deckZone">
-          <div class="zone-title">CANGKULAN</div>
-          <div class="card-back" onclick="drawCard()" title="Klik untuk cangkul 1 kartu"></div>
+        <div class="table-center">
+          <div class="deck-zone" id="deckZone">
+            <div class="zone-title">CANGKULAN</div>
+            <div class="card-back" onclick="drawCard()" title="Klik untuk cangkul 1 kartu"></div>
+          </div>
+
+          <div class="discard-zone">
+            <div class="zone-title">SELURUH BUANGAN (*KLIK UNTUK AMBIL S.D. 7 TERATAS)</div>
+            <div class="discard-stack" id="discardPile"></div>
+          </div>
         </div>
 
-        <div class="discard-zone">
-          <div class="zone-title">SELURUH BUANGAN (*HANYA 7 TERATAS BISA DIAMBIL)</div>
-          <div class="discard-stack" id="discardPile"></div>
+        <div class="player-dock">
+          <div id="myMelds" class="melds-container" style="margin-bottom: 5px;"></div>
+          
+          <div class="zone-title" id="myHandCountTitle" style="color: var(--gold-light);">KARTU TANGAN KAMU</div>
+          <div class="hand-cards" id="myHand"></div>
+
+          <div class="action-bar">
+            <button class="btn-action" onclick="moveSelectedCard('left')">◄ GESER KIRI</button>
+            <button class="btn-action" onclick="moveSelectedCard('right')">GESER KANAN ►</button>
+            <button class="btn-action active" onclick="submitMeld()">TURUNKAN SET (TRIS/SERI)</button>
+            <button class="btn-action" onclick="discardSelectedCard()">BUANG KARTU</button>
+            <button id="tutupBtn" class="btn-action go" onclick="claimTutupTangan()" style="display:none;">TUTUP TANGAN (MENANG)</button>
+            <button id="goBtn" class="btn-action go" onclick="confirmEndTurn()" style="display:none;">SELESAI GILIRAN (GO) ➔</button>
+            <button id="cekiBtn" class="btn-action danger" onclick="toggleCeki()">DEKLARASI "CEKI!"</button>
+          </div>
         </div>
       </div>
 
-      <div class="player-dock">
-        <div id="myMelds" class="melds-container" style="margin-bottom: 5px;"></div>
-        
-        <div class="zone-title" id="myHandCountTitle" style="color: var(--gold-light);">KARTU TANGAN KAMU</div>
-        <div class="hand-cards" id="myHand"></div>
-
-        <div class="action-bar">
-          <button class="btn-action" onclick="moveSelectedCard('left')">◄ GESER KIRI</button>
-          <button class="btn-action" onclick="moveSelectedCard('right')">GESER KANAN ►</button>
-          <button class="btn-action active" onclick="submitMeld()">TURUNKAN SET (TRIS/SERI)</button>
-          <button class="btn-action" onclick="discardSelectedCard()">BUANG KARTU</button>
-          <button id="goBtn" class="btn-action go" onclick="confirmEndTurn()" style="display:none;">SELESAI GILIRAN (GO) ➔</button>
-          <button id="cekiBtn" class="btn-action danger" onclick="toggleCeki()">DEKLARASI "CEKI!"</button>
+      <!-- CHAT & VOICE SIDEBAR -->
+      <div class="chat-sidebar">
+        <div class="chat-header">
+          <span>💬 KOMUNIKASI</span>
+          <button id="micBtn" class="btn-mic" onclick="toggleMic()" title="Open Mic (Suara)">🎙️</button>
         </div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" placeholder="Ketik pesan..." onkeypress="handleChatKeyPress(event)" />
+          <button class="btn-action active" onclick="sendChatMessage()">KIRIM</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL KONFIRMASI AMBIL BUANGAN -->
+  <div id="confirmTakeModal" class="modal-overlay">
+    <div class="modal-card">
+      <h2>📥 AMBIL KARTU BUANGAN</h2>
+      <p id="takeConfirmText">Apakah Anda yakin ingin mengambil kartu buangan ini?</p>
+      <div class="confirm-cards-preview" id="previewTakeCards"></div>
+      <div class="modal-btns">
+        <button class="btn-gold" onclick="executeTakeDiscard()">YA, AMBIL</button>
+        <button class="btn-outline" onclick="closeTakeModal()">BATAL</button>
       </div>
     </div>
   </div>
@@ -497,6 +127,8 @@
       <button class="btn-outline" onclick="exitRoom()">KELUAR KE LOBBY</button>
     </div>
   </div>
+
+  <audio id="remoteAudio" autoplay></audio>
 
   <script>
     const SUPABASE_URL = "https://qniqdlbtqstzucxzznih.supabase.co";
@@ -518,6 +150,12 @@
     let currentRoomId = localStorage.getItem('ceki_room_id');
     let roomData = null;
     let selectedIndices = [];
+    let pendingTakeCount = 0;
+
+    // WebRTC Voice Chat State
+    let localStream = null;
+    let peerConnections = {};
+    let isMicActive = false;
 
     window.addEventListener('DOMContentLoaded', () => {
       let savedName = localStorage.getItem('ceki_player_name');
@@ -539,14 +177,33 @@
       }
     });
 
+    function createUniqueCard(suit, value) {
+      let type = 'number';
+      let pts = 50;
+      if (['J', 'Q', 'K'].includes(value)) {
+        type = 'picture';
+        pts = 100;
+      } else if (value === 'A') {
+        type = 'ace';
+        pts = 150;
+      }
+      return {
+        id: 'c_' + Math.random().toString(36).substr(2, 9),
+        suit: suit,
+        value: value,
+        type: type,
+        points: pts,
+        isRed: (suit === '♥' || suit === '♦')
+      };
+    }
+
     function createDeck() {
       const suits = ['♠', '♥', '♦', '♣'];
       const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
       let deck = [];
       for (let s of suits) {
         for (let v of values) {
-          let pts = (['J','Q','K'].includes(v)) ? 10 : (v === 'A' ? 15 : 5);
-          deck.push({ suit: s, value: v, points: pts, isRed: (s==='♥'||s==='♦') });
+          deck.push(createUniqueCard(s, v));
         }
       }
       return deck.sort(() => Math.random() - 0.5);
@@ -568,7 +225,15 @@
       currentRoomId = newRoomCode;
       localStorage.setItem('ceki_room_id', newRoomCode);
 
-      const newPlayers = [{ id: myPlayerId, name: name, hand: [], melds: [], isCeki: false, score: 0 }];
+      const newPlayers = [{ 
+        id: myPlayerId, 
+        name: name, 
+        hand: [], 
+        melds: [], 
+        isCeki: false, 
+        score: 0,
+        tookDiscard: false 
+      }];
       
       try {
         let { error } = await db.from('rooms').insert([{ 
@@ -577,22 +242,16 @@
           has_drawn: false, 
           has_discarded: false, 
           is_game_over: false,
-          last_action_notice: ''
+          last_action_notice: '',
+          chat_messages: []
         }]);
 
         if (error) {
-          let retry = await db.from('rooms').insert([{ 
-            id: newRoomCode, 
-            players: newPlayers, 
-            has_drawn: false, 
-            has_discarded: false, 
-            is_game_over: false 
-          }]);
-          if (retry.error) return alert('Gagal membuat room: ' + retry.error.message);
+          return alert('Gagal membuat room: ' + error.message);
         }
         enterGameUI(newRoomCode);
       } catch (err) {
-        alert('Gagal terhubung ke database. Cek koneksi internet!');
+        alert('Gagal terhubung ke database.');
       }
     }
 
@@ -612,7 +271,6 @@
 
       try {
         let { data: room, error } = await db.from('rooms').select('*').eq('id', roomId).single();
-
         if (error || !room) return alert('Kode Room tidak ditemukan!');
 
         let existingPlayer = room.players.find(p => p.id === myPlayerId);
@@ -620,12 +278,19 @@
 
         if (!existingPlayer) {
           if (room.players.length >= 4) return alert('Room sudah penuh (Maksimal 4 Pemain)!');
-          updatedPlayers.push({ id: myPlayerId, name: name, hand: [], melds: [], isCeki: false, score: 0 });
+          updatedPlayers.push({ 
+            id: myPlayerId, 
+            name: name, 
+            hand: [], 
+            melds: [], 
+            isCeki: false, 
+            score: 0,
+            tookDiscard: false 
+          });
         }
 
         localStorage.setItem('ceki_room_id', roomId);
         await db.from('rooms').update({ players: updatedPlayers }).eq('id', roomId);
-
         enterGameUI(roomId);
       } catch (err) {
         alert('Gagal terhubung ke room.');
@@ -665,49 +330,41 @@
     }
 
     async function startGame() {
-  if (!roomData || !roomData.players) return alert('Data room belum siap!');
-  
-  // Diubah dari < 3 ke < 2 agar bisa dimainkan/dites berdua
-  if (roomData.players.length < 2) return alert('Minimal 2 pemain untuk memulai!');
+      if (!roomData || !roomData.players) return alert('Data room belum siap!');
+      if (roomData.players.length < 2) return alert('Minimal 2 pemain untuk memulai!');
 
-  let deck = createDeck();
-  let players = roomData.players.map(p => ({
-    ...p,
-    hand: deck.splice(0, 7),
-    melds: [],
-    isCeki: false
-  }));
+      let deck = createDeck();
+      let players = roomData.players.map(p => ({
+        ...p,
+        hand: deck.splice(0, 7),
+        melds: [],
+        isCeki: false,
+        tookDiscard: false
+      }));
 
-  try {
-    let { error } = await db.from('rooms').update({
-      game_started: true,
-      deck: deck,
-      discard_pile: [],
-      players: players,
-      turn_index: 0,
-      has_drawn: false,
-      has_discarded: false,
-      is_game_over: false,
-      last_action_notice: 'Permainan Dimulai!'
-    }).eq('id', currentRoomId);
-
-    if (error) {
-      console.error('Error saat start game:', error);
-      alert('Gagal memulai game: ' + error.message);
+      try {
+        await db.from('rooms').update({
+          game_started: true,
+          deck: deck,
+          discard_pile: [],
+          players: players,
+          turn_index: 0,
+          has_drawn: false,
+          has_discarded: false,
+          is_game_over: false,
+          last_discard_by: null,
+          last_action_notice: 'Permainan Dimulai!'
+        }).eq('id', currentRoomId);
+      } catch (err) {
+        alert('Terjadi kesalahan koneksi ke server.');
+      }
     }
-  } catch (err) {
-    alert('Terjadi kesalahan koneksi ke server.');
-  }
-}
 
     async function drawCard() {
       if (!roomData || !roomData.game_started || roomData.is_game_over) return alert('Belum mulai!');
       const currentPlayer = roomData.players[roomData.turn_index];
       if (currentPlayer.id !== myPlayerId) return alert('Bukan giliran Anda!');
-      
-      if (roomData.has_drawn) {
-        return alert('Anda sudah mengambil kartu! Tidak boleh mencangkul 2x.');
-      }
+      if (roomData.has_drawn) return alert('Anda sudah mengambil kartu!');
 
       let deck = [...roomData.deck];
       if (deck.length === 0) return alert('Tumpukan cangkulan sudah habis!');
@@ -726,37 +383,60 @@
       }).eq('id', currentRoomId);
     }
 
-    async function takeFromDiscard(takeIndexFromRight) {
-      if (!roomData || !roomData.game_started || roomData.is_game_over) return alert('Belum mulai!');
+    function promptTakeDiscard(takeIndexFromRight) {
+      if (!roomData || !roomData.game_started || roomData.is_game_over) return;
       const currentPlayer = roomData.players[roomData.turn_index];
       if (currentPlayer.id !== myPlayerId) return alert('Bukan giliran Anda!');
-      
-      if (roomData.has_drawn) {
-        return alert('Anda sudah mengambil kartu! Tidak boleh mengambil 2x.');
-      }
+      if (roomData.has_drawn) return alert('Anda sudah mengambil kartu!');
+      if (takeIndexFromRight > 7) return alert('Hanya maksimal 7 kartu teratas yang boleh diambil!');
+
+      pendingTakeCount = takeIndexFromRight;
+      let discardPile = [...roomData.discard_pile];
+      let total = discardPile.length;
+      let cardsToTake = discardPile.slice(total - takeIndexFromRight);
+
+      const previewDiv = document.getElementById('previewTakeCards');
+      previewDiv.innerHTML = '';
+      cardsToTake.forEach(c => previewDiv.appendChild(createCardUI(c)));
+
+      document.getElementById('takeConfirmText').innerText = `Anda akan mengambil ${takeIndexFromRight} kartu dari buangan. Lanjutkan?`;
+      document.getElementById('confirmTakeModal').style.display = 'flex';
+    }
+
+    function closeTakeModal() {
+      document.getElementById('confirmTakeModal').style.display = 'none';
+      pendingTakeCount = 0;
+    }
+
+    async function executeTakeDiscard() {
+      if (pendingTakeCount <= 0) return;
+      let takeIndexFromRight = pendingTakeCount;
+      closeTakeModal();
 
       let discardPile = [...roomData.discard_pile];
       let totalDiscard = discardPile.length;
 
-      if (takeIndexFromRight > 7) {
-        return alert('Hanya maksimal 7 kartu teratas/terakhir yang boleh diambil!');
-      }
-
       let takenCards = discardPile.splice(totalDiscard - takeIndexFromRight, takeIndexFromRight);
 
       let players = roomData.players.map(p => {
-        if (p.id === myPlayerId) return { ...p, hand: [...p.hand, ...takenCards] };
+        if (p.id === myPlayerId) {
+          return { 
+            ...p, 
+            hand: [...p.hand, ...takenCards],
+            tookDiscard: true
+          };
+        }
         return p;
       });
 
+      let currentPlayer = roomData.players[roomData.turn_index];
       let takenCardsText = takenCards.map(c => c.value + c.suit).join(', ');
-      let noticeMsg = `📢 ${currentPlayer.name.toUpperCase()} mengambil kartu buangan: ${takenCardsText}`;
 
       await db.from('rooms').update({ 
         discard_pile: discardPile, 
         players, 
         has_drawn: true,
-        last_action_notice: noticeMsg
+        last_action_notice: `📢 ${currentPlayer.name.toUpperCase()} mengambil ${takeIndexFromRight} kartu buangan: ${takenCardsText}`
       }).eq('id', currentRoomId);
     }
 
@@ -809,11 +489,11 @@
 
     async function submitMeld() {
       if (selectedIndices.length < 3) return alert('Minimal pilih 3 kartu untuk membuat Tris/Seri!');
-      
       let me = roomData.players.find(p => p.id === myPlayerId);
       let selectedCards = selectedIndices.map(i => me.hand[i]);
 
-      let newHand = me.hand.filter((_, i) => !selectedIndices.includes(i));
+      let selectedIds = selectedCards.map(c => c.id);
+      let newHand = me.hand.filter(c => !selectedIds.includes(c.id));
       let newMelds = [...(me.melds || []), selectedCards];
 
       let players = roomData.players.map(p => {
@@ -835,31 +515,38 @@
       }
 
       if (roomData.has_discarded) {
-        return alert('Anda sudah membuang kartu! Klik tombol SELESAI GILIRAN (GO) untuk menyerahkan giliran.');
+        return alert('Anda sudah membuang kartu!');
       }
 
       if (selectedIndices.length !== 1) return alert('Pilih tepat 1 kartu untuk dibuang!');
 
-      let index = selectedIndices[0];
-      let players = JSON.parse(JSON.stringify(roomData.players));
-      let myHand = players[roomData.turn_index].hand;
-      let discarded = myHand.splice(index, 1)[0];
+      let me = roomData.players.find(p => p.id === myPlayerId);
+      let discardedCard = me.hand[selectedIndices[0]];
 
-      let discardPile = [...(roomData.discard_pile || []), discarded];
+      let players = roomData.players.map(p => {
+        if (p.id === myPlayerId) {
+          return {
+            ...p,
+            hand: p.hand.filter(c => c.id !== discardedCard.id)
+          };
+        }
+        return p;
+      });
 
+      let discardPile = [...(roomData.discard_pile || []), discardedCard];
       selectedIndices = [];
-      
+
       await db.from('rooms').update({
         players: players,
         discard_pile: discardPile,
         has_discarded: true,
-        last_action_notice: `🗑️ ${currentPlayer.name.toUpperCase()} membuang kartu: ${discarded.value}${discarded.suit}`
+        last_discard_by: myPlayerId,
+        last_action_notice: `🗑️ ${currentPlayer.name.toUpperCase()} membuang kartu: ${discardedCard.value}${discardedCard.suit}`
       }).eq('id', currentRoomId);
     }
 
     async function confirmEndTurn() {
       if (!roomData || !roomData.has_discarded) return;
-      
       let players = roomData.players;
       let nextTurn = (roomData.turn_index + 1) % players.length;
 
@@ -870,10 +557,107 @@
       }).eq('id', currentRoomId);
     }
 
+    // TUTUP TANGAN / MENANG & LOGIKA SKOR
+    async function claimTutupTangan() {
+      let me = roomData.players.find(p => p.id === myPlayerId);
+      if (!me) return;
+
+      if (me.hand.length > 0) {
+        return alert('Kartu di tangan harus habis atau sudah dibuat tris/seri semua!');
+      }
+
+      calculateAndEndGame(myPlayerId);
+    }
+
+    function calculateAndEndGame(winnerId) {
+      let players = roomData.players;
+      let winner = players.find(p => p.id === winnerId);
+      let isNoDiscardWinner = winner && !winner.tookDiscard;
+
+      // Poin 8: Jika tidak ada kartu jadi / tidak ada yang ambil buangan (Seri tanpa poin)
+      let anyTookDiscard = players.some(p => p.tookDiscard);
+      let anyHasMelds = players.some(p => p.melds && p.melds.length > 0);
+
+      let finalScores = {};
+
+      if (!anyTookDiscard && !anyHasMelds && !winnerId) {
+        // Game Tanpa Poin / Seri
+        players.forEach(p => {
+          finalScores[p.id] = { total: 0, detail: 'Game Seri - Tidak Ada Poin' };
+        });
+      } else if (winnerId && isNoDiscardWinner) {
+        // Poin 7: Tutup Tangan Tanpa Buangan (+250, lawan 0)
+        players.forEach(p => {
+          if (p.id === winnerId) {
+            finalScores[p.id] = { total: 250, detail: 'Tutup Tangan Tanpa Buangan (+250)' };
+          } else {
+            finalScores[p.id] = { total: 0, detail: 'Lawan Tutup Tangan Murni (0)' };
+          }
+        });
+      } else {
+        // Kalkulasi Skor Standar (Poin 3, 4, 5)
+        let lastDiscarderId = roomData.last_discard_by;
+        let isCekiPenaltyApplied = winner && winner.isCeki && winner.tookDiscard && lastDiscarderId && lastDiscarderId !== winnerId;
+
+        players.forEach(p => {
+          let meldPoints = 0;
+          if (p.melds) {
+            p.melds.forEach(group => {
+              group.forEach(c => {
+                if (c.type === 'number') meldPoints += 50;
+                else if (c.type === 'picture') meldPoints += 100;
+                else if (c.type === 'ace') meldPoints += 150;
+              });
+            });
+          }
+
+          let remainingMinus = 0;
+          let unmadeCount = p.hand ? p.hand.length : 0;
+          if (p.hand) {
+            p.hand.forEach(c => {
+              if (c.type === 'number') remainingMinus -= 50;
+              else if (c.type === 'picture') remainingMinus -= 100;
+              else if (c.type === 'ace') remainingMinus -= 150;
+            });
+          }
+
+          let total = meldPoints + remainingMinus;
+          let detailMsg = `Kartu Jadi: +${meldPoints}, Sisa Kartu: ${remainingMinus}`;
+
+          // Bonus Menang (Poin 4)
+          if (p.id === winnerId) {
+            let bonus = 50; // default angka
+            total += bonus;
+            detailMsg += ` | Bonus Tutup: +${bonus}`;
+          }
+
+          // Penalti Ceki (Poin 5)
+          if (p.id === lastDiscarderId && isCekiPenaltyApplied) {
+            let penaltyBase = 50 * (unmadeCount + 1);
+            total -= penaltyBase;
+            detailMsg += ` | ⚠️ PENALTI BUANG CEKIAN (-${penaltyBase})`;
+          }
+
+          finalScores[p.id] = { total, detail: detailMsg };
+        });
+      }
+
+      let updatedPlayers = players.map(p => ({
+        ...p,
+        score: (p.score || 0) + (finalScores[p.id] ? finalScores[p.id].total : 0),
+        lastGameScore: finalScores[p.id]
+      }));
+
+      db.from('rooms').update({
+        is_game_over: true,
+        players: updatedPlayers,
+        last_action_notice: `🏆 GAME SELESAI! Pemenang: ${winner ? winner.name.toUpperCase() : 'SERI'}`
+      }).eq('id', currentRoomId);
+    }
+
     async function endGame() {
       if (!confirm('Yakin ingin mengakhiri permainan sekarang?')) return;
-      
-      await db.from('rooms').update({ is_game_over: true }).eq('id', currentRoomId);
+      calculateAndEndGame(null);
     }
 
     async function rematchGame() {
@@ -881,6 +665,7 @@
       startGame();
     }
 
+    // ================= RENDER UI =================
     function renderGame() {
       if (!roomData) return;
 
@@ -895,11 +680,11 @@
       if (roomData.game_started && !roomData.is_game_over) {
         if (isMyTurn) {
           if (!roomData.has_drawn) {
-            turnText = 'GILIRAN ANDA: Cangkul atau Ambil Kartu Buangan dulu!';
+            turnText = 'GILIRAN ANDA: Cangkul atau Ambil Kartu Buangan!';
           } else if (!roomData.has_discarded) {
-            turnText = 'GILIRAN ANDA: Pilih 1 kartu lalu klik BUANG KARTU';
+            turnText = 'GILIRAN ANDA: Buang 1 kartu!';
           } else {
-            turnText = 'GILIRAN ANDA: Klik tombol GO untuk oper giliran ke lawan!';
+            turnText = 'GILIRAN ANDA: Klik GO untuk oper giliran!';
           }
         } else {
           turnText = `GILIRAN: ${currentPlayer.name.toUpperCase()}`;
@@ -917,10 +702,14 @@
         noticeDiv.style.display = 'none';
       }
 
+      const me = roomData.players.find(p => p.id === myPlayerId);
+
       const goBtn = document.getElementById('goBtn');
       goBtn.style.display = (isMyTurn && roomData.has_discarded && !roomData.is_game_over) ? 'inline-block' : 'none';
 
-      const me = roomData.players.find(p => p.id === myPlayerId);
+      const tutupBtn = document.getElementById('tutupBtn');
+      tutupBtn.style.display = (isMyTurn && me && me.hand.length === 0 && roomData.has_drawn && !roomData.is_game_over) ? 'inline-block' : 'none';
+
       const cekiBtn = document.getElementById('cekiBtn');
       if (me && me.isCeki) {
         cekiBtn.innerText = 'BATALKAN "CEKI!"';
@@ -940,35 +729,40 @@
         cekiBanner.style.display = 'none';
       }
 
+      // MODAL GAME OVER & POIN
       const modal = document.getElementById('gameOverModal');
       if (roomData.is_game_over) {
         modal.style.display = 'flex';
         document.getElementById('rematchBtn').style.display = isHost ? 'inline-block' : 'none';
 
         let scoreListHTML = '';
-        let minScore = 9999;
-        let winnerName = '';
+        let highestScore = -99999;
+        let winnerName = 'TIDAK ADA';
 
         roomData.players.forEach(p => {
-          let pts = p.hand ? p.hand.reduce((sum, c) => sum + c.points, 0) : 0;
-          if (pts < minScore) {
-            minScore = pts;
+          let scoreData = p.lastGameScore || { total: 0, detail: '' };
+          if (scoreData.total > highestScore) {
+            highestScore = scoreData.total;
             winnerName = p.name.toUpperCase();
           }
           scoreListHTML += `
             <div class="score-item">
-              <span>${p.name.toUpperCase()} (${p.hand ? p.hand.length : 0} Kartu)</span>
-              <span style="font-weight:bold; color:var(--gold-light);">${pts} Poin Sisa</span>
+              <div class="score-header-row">
+                <span>${p.name.toUpperCase()} (Total Akumulasi: ${p.score || 0}pt)</span>
+                <span style="color:var(--gold-light);">${scoreData.total >= 0 ? '+' : ''}${scoreData.total} pt</span>
+              </div>
+              <div class="score-detail">${scoreData.detail}</div>
             </div>
           `;
         });
 
-        document.getElementById('winnerTitle').innerText = `PEMENANG: ${winnerName} (Poin Terendah: ${minScore}pt)`;
+        document.getElementById('winnerTitle').innerText = `PEMENANG: ${winnerName} (${highestScore}pt)`;
         document.getElementById('scoreList').innerHTML = scoreListHTML;
       } else {
         modal.style.display = 'none';
       }
 
+      // RENDER LAWAN
       const oppArea = document.getElementById('opponentsArea');
       oppArea.innerHTML = '';
       
@@ -981,7 +775,7 @@
 
         box.innerHTML = `
           <div class="opponent-name">${opp.name.toUpperCase()} ${cekiTagHTML}</div>
-          <div class="card-count-badge">🂠 ${handCount} Kartu</div>
+          <div class="card-count-badge">🂠 ${handCount} Kartu | Skor: ${opp.score || 0}</div>
         `;
 
         let meldsDiv = document.createElement('div');
@@ -1002,6 +796,7 @@
         oppArea.appendChild(box);
       });
 
+      // RENDER HAND SAYA & MELDES
       const myMeldsDiv = document.getElementById('myMelds');
       myMeldsDiv.innerHTML = '';
 
@@ -1016,8 +811,9 @@
 
       const myHandCount = me && me.hand ? me.hand.length : 0;
       const myName = me ? me.name.toUpperCase() : 'ANDA';
-      document.getElementById('myHandCountTitle').innerText = `PEMAIN: ${myName} (ANDA) | KARTU TANGAN KAMU (${myHandCount} KARTU)${me && me.isCeki ? ' - Status: CEKI!' : ''}`;
+      document.getElementById('myHandCountTitle').innerText = `PEMAIN: ${myName} (ANDA) | KARTU TANGAN (${myHandCount} KARTU) | SKOR: ${me ? me.score || 0 : 0}`;
 
+      // RENDER CANGKULAN & DISCARD PILE
       const deckZone = document.getElementById('deckZone');
       const remainingDeck = roomData.deck ? roomData.deck.length : 0;
       deckZone.innerHTML = `
@@ -1040,7 +836,7 @@
           if (takeIndexFromRight <= 7) {
             el.classList.add('takeable');
             el.title = `Klik untuk mengambil ${takeIndexFromRight} kartu buangan`;
-            el.onclick = () => takeFromDiscard(takeIndexFromRight);
+            el.onclick = () => promptTakeDiscard(takeIndexFromRight);
           } else {
             el.classList.add('disabled-discard');
             el.title = "Kartu buangan lama (Tidak bisa diambil)";
@@ -1064,6 +860,8 @@
           handDiv.appendChild(el);
         });
       }
+
+      renderChat();
     }
 
     function createCardUI(card) {
@@ -1076,6 +874,63 @@
         <div class="card-pts">${card.points}pt</div>
       `;
       return div;
+    }
+
+    // ================= CHAT & VOICE WEBRTC =================
+    async function sendChatMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text || !roomData) return;
+
+      let me = roomData.players.find(p => p.id === myPlayerId);
+      let name = me ? me.name : 'Pemain';
+
+      let messages = roomData.chat_messages || [];
+      messages.push({ author: name, text: text, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+
+      input.value = '';
+      await db.from('rooms').update({ chat_messages: messages }).eq('id', currentRoomId);
+    }
+
+    function handleChatKeyPress(e) {
+      if (e.key === 'Enter') sendChatMessage();
+    }
+
+    function renderChat() {
+      if (!roomData) return;
+      const chatBox = document.getElementById('chatMessages');
+      chatBox.innerHTML = '';
+
+      let messages = roomData.chat_messages || [];
+      messages.forEach(m => {
+        let div = document.createElement('div');
+        div.className = 'msg-item';
+        div.innerHTML = `<div class="msg-author">${m.author} <span style="font-weight:normal; color:#888;">${m.time}</span></div><div>${m.text}</div>`;
+        chatBox.appendChild(div);
+      });
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function toggleMic() {
+      const micBtn = document.getElementById('micBtn');
+      if (!isMicActive) {
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          isMicActive = true;
+          micBtn.classList.add('active');
+          alert('Microphone diaktifkan (Open Mic On)');
+        } catch (err) {
+          alert('Tidak dapat mengakses microphone: ' + err.message);
+        }
+      } else {
+        if (localStream) {
+          localStream.getTracks().forEach(track => track.stop());
+        }
+        isMicActive = false;
+        micBtn.classList.remove('active');
+        alert('Microphone dimatikan');
+      }
     }
   </script>
 </body>
