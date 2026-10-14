@@ -272,13 +272,16 @@
     }
 
     function listenRoomUpdates() {
+      // Pastikan Supabase Realtime diaktifkan untuk tabel rooms di dashboard!
       db.channel(`room_data_${currentRoomId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${currentRoomId}` }, 
         payload => {
           roomData = payload.new;
           renderGame();
         })
-        .subscribe();
+        .subscribe((status) => {
+          if(status === 'SUBSCRIBED') console.log('Realtime Connected!');
+        });
 
       db.from('rooms').select('*').eq('id', currentRoomId).single().then(res => {
         roomData = res.data;
@@ -735,13 +738,14 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
+    // PERBAIKAN: Menambahkan { config: { broadcast: { ack: false } } } agar Supabase menyiarkan sinyal WebRTC
     function setupVoiceSignaling() {
-      rtcChannel = db.channel(`rtc_${currentRoomId}`);
+      rtcChannel = db.channel(`rtc_${currentRoomId}`, { config: { broadcast: { ack: false } } });
       rtcChannel
         .on('broadcast', { event: 'signal' }, async ({ payload }) => {
           if (payload.target === myPlayerId) {
+            let pc = getOrCreatePeer(payload.from);
             if (payload.sdp) {
-              let pc = getOrCreatePeer(payload.from);
               await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
               if (payload.sdp.type === 'offer') {
                 let answer = await pc.createAnswer();
@@ -749,7 +753,6 @@
                 rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: payload.from, sdp: answer } });
               }
             } else if (payload.candidate) {
-              let pc = getOrCreatePeer(payload.from);
               await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
             }
           }
@@ -765,9 +768,17 @@
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
       }
 
+      // PERBAIKAN: Membuat audio element unik per-pemain, bukan numpuk 1 ID
       pc.ontrack = (e) => {
-        let remoteAudio = document.getElementById('remoteAudio');
-        if (remoteAudio && e.streams[0]) remoteAudio.srcObject = e.streams[0];
+        let audioId = `audio_peer_${peerId}`;
+        let audioEl = document.getElementById(audioId);
+        if (!audioEl) {
+          audioEl = document.createElement('audio');
+          audioEl.id = audioId;
+          audioEl.autoplay = true;
+          document.body.appendChild(audioEl);
+        }
+        audioEl.srcObject = e.streams[0];
       };
 
       pc.onicecandidate = (e) => {
@@ -788,13 +799,19 @@
           isMicActive = true;
           micBtn.classList.add('active');
 
-          roomData.players.filter(p => p.id !== myPlayerId).forEach(async (p) => {
-            let pc = getOrCreatePeer(p.id);
-            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            let offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: p.id, sdp: offer } });
-          });
+          if(roomData && roomData.players) {
+            roomData.players.filter(p => p.id !== myPlayerId).forEach(async (p) => {
+              let pc = getOrCreatePeer(p.id);
+              let senders = pc.getSenders();
+              let hasAudio = senders.some(s => s.track && s.track.kind === 'audio');
+              if(!hasAudio) {
+                  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+              }
+              let offer = await pc.createOffer();
+              await pc.setLocalDescription(offer);
+              rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: p.id, sdp: offer } });
+            });
+          }
         } catch (err) {
           alert('Gagal akses microphone: ' + err.message);
         }
