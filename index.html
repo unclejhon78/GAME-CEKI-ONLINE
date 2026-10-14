@@ -741,29 +741,61 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
+    // ================= CHAT & VOICE WEBRTC (DENGAN AUTO-RECONNECT) =================
+    // (Pertahankan bagian kode chat di atasnya)
+
     function setupVoiceSignaling() {
       rtcChannel = db.channel(`rtc_${currentRoomId}`, { config: { broadcast: { ack: false } } });
       rtcChannel
         .on('broadcast', { event: 'signal' }, async ({ payload }) => {
           if (payload.target === myPlayerId) {
             let pc = getOrCreatePeer(payload.from);
-            if (payload.sdp) {
-              await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-              if (payload.sdp.type === 'offer') {
-                let answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: payload.from, sdp: answer } });
+            
+            try {
+              if (payload.sdp) {
+                await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+                if (payload.sdp.type === 'offer') {
+                  let answer = await pc.createAnswer();
+                  await pc.setLocalDescription(answer);
+                  rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: payload.from, sdp: answer } });
+                }
+              } else if (payload.candidate) {
+                // Pastikan remote description sudah ada sebelum menambah candidate
+                if (pc.remoteDescription && pc.remoteDescription.type) {
+                  await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+                }
+              } else if (payload.type === 'ping') {
+                // Menerima ping untuk menjaga koneksi tetap hidup
+                // console.log('Ping received from', payload.from);
               }
-            } else if (payload.candidate) {
-              await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+            } catch (e) {
+              console.error("WebRTC Error:", e);
             }
           }
         })
         .subscribe();
+        
+      // Jalankan interval Ping setiap 15 detik agar koneksi tidak ditutup oleh router
+      setInterval(() => {
+        if (isMicActive && roomData && roomData.players) {
+          roomData.players.filter(p => p.id !== myPlayerId).forEach(p => {
+             rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { type: 'ping', from: myPlayerId, target: p.id } });
+          });
+        }
+      }, 15000);
     }
 
     function getOrCreatePeer(peerId) {
-      if (peerConnections[peerId]) return peerConnections[peerId];
+      if (peerConnections[peerId]) {
+        // Jika status terputus, paksa restart
+        if (peerConnections[peerId].connectionState === 'disconnected' || peerConnections[peerId].connectionState === 'failed') {
+           peerConnections[peerId].close();
+           delete peerConnections[peerId];
+        } else {
+           return peerConnections[peerId];
+        }
+      }
+      
       let pc = new RTCPeerConnection(rtcConfig);
 
       if (localStream) {
@@ -785,6 +817,23 @@
       pc.onicecandidate = (e) => {
         if (e.candidate) {
           rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: peerId, candidate: e.candidate } });
+        }
+      };
+      
+      // Auto-Reconnect jika koneksi terputus
+      pc.onconnectionstatechange = async () => {
+        if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+            console.log("Koneksi terputus dengan " + peerId + ". Mencoba menyambung ulang...");
+            if (isMicActive) {
+                try {
+                    // Buat penawaran ulang (ICE Restart)
+                    let offer = await pc.createOffer({ iceRestart: true });
+                    await pc.setLocalDescription(offer);
+                    rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: peerId, sdp: offer } });
+                } catch(err) {
+                    console.error("Gagal reconnect:", err);
+                }
+            }
         }
       };
 
@@ -820,6 +869,12 @@
         if (localStream) localStream.getTracks().forEach(track => track.stop());
         isMicActive = false;
         micBtn.classList.remove('active');
+        
+        // Tutup semua koneksi saat mic dimatikan
+        Object.keys(peerConnections).forEach(id => {
+            peerConnections[id].close();
+            delete peerConnections[id];
+        });
       }
     }
   </script>
