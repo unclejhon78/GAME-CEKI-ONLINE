@@ -173,11 +173,11 @@
     let rtcChannel = null;
 
     const rtcConfig = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' }
-  ]
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' }
+      ]
     };
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -276,7 +276,6 @@
     }
 
     function listenRoomUpdates() {
-      // Pastikan Supabase Realtime diaktifkan untuk tabel rooms di dashboard!
       db.channel(`room_data_${currentRoomId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${currentRoomId}` }, 
         payload => {
@@ -742,7 +741,6 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // PERBAIKAN: Menambahkan { config: { broadcast: { ack: false } } } agar Supabase menyiarkan sinyal WebRTC
     function setupVoiceSignaling() {
       rtcChannel = db.channel(`rtc_${currentRoomId}`, { config: { broadcast: { ack: false } } });
       rtcChannel
@@ -772,7 +770,6 @@
         localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
       }
 
-      // PERBAIKAN: Membuat audio element unik per-pemain, bukan numpuk 1 ID
       pc.ontrack = (e) => {
         let audioId = `audio_peer_${peerId}`;
         let audioEl = document.getElementById(audioId);
