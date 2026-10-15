@@ -3,35 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ceki Remi Online - Arena Klasik</title>
+  <title>GOREMI</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- LOBBY SCREEN -->
-  <div id="lobby">
-    <div class="logo-container">
-      <h1>CEKI REMI</h1>
-      <p>Arena Kartu Tradisional Multiplayer</p>
-    </div>
-
-    <div class="lobby-card">
-      <div class="input-group">
-        <label>NAMA PEMAIN</label>
-        <input type="text" id="playerName" placeholder="Masukkan nama kamu..." maxlength="12" />
+  <!-- LOBBY SCREEN (TEMA NEON GOREMI) -->
+  <div id="lobby" class="lobby-neon">
+    <div class="neon-border-wrapper">
+      <div class="logo-neon">
+        <span class="welcome-text">WELCOME</span>
+        <span class="to-text">TO</span>
+        <h1 class="goremi-text">GOREMI</h1>
       </div>
 
-      <button class="btn-gold" id="btnCreateRoom" onclick="createNewRoom()">+ BIKIN ROOM BARU</button>
-
-      <div class="divider">ATAU GABUNG ROOM</div>
-
-      <div class="input-group">
-        <input type="text" id="roomId" placeholder="Ketik Kode Room (mis: CK8A2F)" maxlength="8" style="text-transform: uppercase;" />
+      <div class="neon-panel input-name-panel">
+        <label class="neon-label yellow-glow">INPUT NAME</label>
+        <div class="tech-box">
+          <input type="text" id="playerName" placeholder="Nama Kamu..." maxlength="12" class="neon-input border-bottom-cyan" />
+          <button id="btnCreateRoom" onclick="createNewRoom()" class="neon-btn green-btn">MAKE NEW ROOM</button>
+        </div>
       </div>
 
-      <button class="btn-outline" id="btnJoinRoom" onclick="joinExistingRoom()">GABUNG ROOM</button>
+      <div class="neon-center-deco">
+         <div class="energy-ring"></div>
+         <div class="energy-ring ring-alt"></div>
+         <div class="flying-card card-left"><span>♠</span> A</div>
+         <div class="flying-card card-right"><span>♥</span> K</div>
+         <div class="chip chip-1"></div>
+         <div class="chip chip-2"></div>
+      </div>
+
+      <div class="neon-panel join-room-panel">
+        <label class="neon-label yellow-glow">JOIN ROOM</label>
+        <input type="text" id="roomId" placeholder="KODE ROOM..." maxlength="8" class="neon-input dashed-orange" style="text-transform: uppercase;" />
+        <button id="btnJoinRoom" onclick="joinExistingRoom()" class="neon-btn pill-btn red-btn">ENTER</button>
+      </div>
     </div>
   </div>
 
@@ -61,11 +70,11 @@
         <div class="table-center">
           <div class="deck-zone" id="deckZone">
             <div class="zone-title">CANGKULAN</div>
-            <div class="card-back" onclick="drawCard()" title="Klik untuk cangkul 1 kartu"></div>
+            <div class="card-back" id="deckCardBack" onclick="drawCard()" title="Klik untuk cangkul 1 kartu"></div>
           </div>
 
           <div class="discard-zone">
-            <div class="zone-title">SELURUH BUANGAN (*KLIK UNTUK AMBIL S.D. 7 TERATAS)</div>
+            <div class="zone-title">SELURUH BUANGAN (GESER & KLIK S.D. 7 TERATAS)</div>
             <div class="discard-stack" id="discardPile"></div>
           </div>
         </div>
@@ -93,8 +102,9 @@
         <div class="chat-header">
           <span>💬 KOMUNIKASI</span>
           <div style="display: flex; gap: 5px; align-items: center;">
-            <button id="micBtn" class="btn-mic" onclick="toggleMic()" title="Open Mic (Suara)">🎙️</button>
-            <button class="btn-action danger" onclick="toggleChatSidebar()" style="padding: 2px 8px;">✕</button>
+            <button type="button" id="speakerBtn" class="btn-mic active" onclick="toggleSpeaker()" title="Audio Dengar">🔊</button>
+            <button type="button" id="micBtn" class="btn-mic muted" onclick="toggleMic()" title="Mikrofon">🎙️❌</button>
+            <button type="button" class="btn-action danger" onclick="toggleChatSidebar()" style="padding: 2px 8px;">✕</button>
           </div>
         </div>
         <div class="chat-messages" id="chatMessages"></div>
@@ -105,6 +115,9 @@
       </div>
     </div>
   </div>
+
+  <!-- CONTAINER ANIMASI KARTU TERBANG -->
+  <div id="flyCardContainer" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:999;"></div>
 
   <!-- MODAL KONFIRMASI AMBIL BUANGAN -->
   <div id="confirmTakeModal" class="modal-overlay">
@@ -165,18 +178,23 @@
     let roomData = null;
     let selectedIndices = [];
     let pendingTakeCount = 0;
+    
+    let lastMessageCount = 0;
+    let activePopups = {};
 
-    // WebRTC Voice Chat State & Channel
     let localStream = null;
     let peerConnections = {};
-    let isMicActive = false;
+    window.isMicActive = false;
+    window.isSpeakerMuted = false;
     let rtcChannel = null;
 
     const rtcConfig = {
       iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' }
+        { urls: "stun:stun.relay.metered.ca:80" },
+        { urls: "turn:global.relay.metered.ca:80", username: "4dabed74f3ea8bb1b109c0bf", credential: "MiZHZR8LMMgnwX57" },
+        { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: "4dabed74f3ea8bb1b109c0bf", credential: "MiZHZR8LMMgnwX57" },
+        { urls: "turn:global.relay.metered.ca:443", username: "4dabed74f3ea8bb1b109c0bf", credential: "MiZHZR8LMMgnwX57" },
+        { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: "4dabed74f3ea8bb1b109c0bf", credential: "MiZHZR8LMMgnwX57" },
       ]
     };
 
@@ -201,14 +219,10 @@
     }
 
     function createUniqueCard(suit, value) {
-      let type = 'number', pts = 50;
-      if (['J', 'Q', 'K'].includes(value)) { type = 'picture'; pts = 100; }
-      else if (value === 'A') { type = 'ace'; pts = 150; }
-      return {
-        id: 'c_' + Math.random().toString(36).substr(2, 9),
-        suit, value, type, points: pts,
-        isRed: (suit === '♥' || suit === '♦')
-      };
+      let type = 'number';
+      if (['J', 'Q', 'K'].includes(value)) type = 'picture';
+      else if (value === 'A') type = 'ace';
+      return { id: 'c_' + Math.random().toString(36).substr(2, 9), suit, value, type, isRed: (suit === '♥' || suit === '♦') };
     }
 
     function createDeck() {
@@ -234,7 +248,7 @@
       currentRoomId = newRoomCode;
       localStorage.setItem('ceki_room_id', newRoomCode);
 
-      const newPlayers = [{ id: myPlayerId, name, hand: [], melds: [], isCeki: false, score: 0, lastGameScore: { total: 0 }, tookDiscard: false }];
+      const newPlayers = [{ id: myPlayerId, name, hand: [], melds: [], isCeki: false, score: 0, lastGameScore: { total: 0 }, tookDiscard: false, hasTakenFirstDiscard: false }];
       
       let { error } = await db.from('rooms').insert([{ 
         id: newRoomCode, players: newPlayers, has_drawn: false, has_discarded: false, is_game_over: false, chat_messages: []
@@ -258,7 +272,7 @@
       let updatedPlayers = [...room.players];
       if (!room.players.some(p => p.id === myPlayerId)) {
         if (room.players.length >= 4) return alert('Room Penuh!');
-        updatedPlayers.push({ id: myPlayerId, name, hand: [], melds: [], isCeki: false, score: 0, lastGameScore: { total: 0 }, tookDiscard: false });
+        updatedPlayers.push({ id: myPlayerId, name, hand: [], melds: [], isCeki: false, score: 0, lastGameScore: { total: 0 }, tookDiscard: false, hasTakenFirstDiscard: false });
       }
 
       localStorage.setItem('ceki_room_id', roomId);
@@ -270,7 +284,6 @@
       document.getElementById('lobby').style.display = 'none';
       document.getElementById('game').style.display = 'flex';
       document.getElementById('roomTitle').innerText = 'ROOM: ' + roomId;
-
       listenRoomUpdates();
       setupVoiceSignaling();
     }
@@ -278,17 +291,11 @@
     function listenRoomUpdates() {
       db.channel(`room_data_${currentRoomId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms', filter: `id=eq.${currentRoomId}` }, 
-        payload => {
-          roomData = payload.new;
-          renderGame();
-        })
-        .subscribe((status) => {
-          if(status === 'SUBSCRIBED') console.log('Realtime Connected!');
-        });
+        payload => { roomData = payload.new; renderGame(); })
+        .subscribe();
 
       db.from('rooms').select('*').eq('id', currentRoomId).single().then(res => {
-        roomData = res.data;
-        renderGame();
+        roomData = res.data; renderGame();
       });
     }
 
@@ -303,28 +310,40 @@
 
     async function startGame() {
       if (!roomData || roomData.players.length < 2) return alert('Minimal 2 pemain!');
-
       let deck = createDeck();
-      let players = roomData.players.map(p => ({
-        ...p,
-        hand: deck.splice(0, 7),
-        melds: [],
-        isCeki: false,
-        tookDiscard: false,
-        score: p.score || 0
-      }));
+      let players = roomData.players.map(p => ({ ...p, hand: deck.splice(0, 7), melds: [], isCeki: false, tookDiscard: false, hasTakenFirstDiscard: false, score: p.score || 0 }));
+      await db.from('rooms').update({ game_started: true, deck, discard_pile: [], players, turn_index: 0, has_drawn: false, has_discarded: false, is_game_over: false, last_action_notice: 'Permainan Dimulai!' }).eq('id', currentRoomId);
+    }
 
-      await db.from('rooms').update({
-        game_started: true,
-        deck,
-        discard_pile: [],
-        players,
-        turn_index: 0,
-        has_drawn: false,
-        has_discarded: false,
-        is_game_over: false,
-        last_action_notice: 'Permainan Dimulai!'
-      }).eq('id', currentRoomId);
+    function playFlyAnimation(fromElId, toElId, cardObj, callback) {
+      const fromEl = document.getElementById(fromElId);
+      const toEl = document.getElementById(toElId);
+      const container = document.getElementById('flyCardContainer');
+      if (!fromEl || !toEl || !container) { if(callback) callback(); return; }
+
+      const startRect = fromEl.getBoundingClientRect();
+      const endRect = toEl.getBoundingClientRect();
+
+      let flyEl = document.createElement('div');
+      flyEl.className = 'card fly-anim-card' + (cardObj.isRed ? ' red' : '');
+      flyEl.innerHTML = `<div class="card-val">${cardObj.value}</div><div class="card-suit">${cardObj.suit}</div><div class="card-center-suit">${cardObj.suit}</div>`;
+      flyEl.style.position = 'absolute';
+      flyEl.style.left = startRect.left + 'px';
+      flyEl.style.top = startRect.top + 'px';
+      flyEl.style.transition = 'all 0.5s cubic-bezier(0.25, 1, 0.5, 1)';
+      container.appendChild(flyEl);
+
+      setTimeout(() => {
+        flyEl.style.left = endRect.left + 'px';
+        flyEl.style.top = endRect.top + 'px';
+        flyEl.style.transform = 'scale(0.8) rotate(10deg)';
+        flyEl.style.opacity = '0.5';
+      }, 20);
+
+      setTimeout(() => {
+        flyEl.remove();
+        if (callback) callback();
+      }, 520);
     }
 
     async function drawCard() {
@@ -337,11 +356,35 @@
       if (deck.length === 0) return alert('Kartu cangkulan sudah habis!');
       let drawnCard = deck.pop();
 
-      let players = roomData.players.map(p => p.id === myPlayerId ? { ...p, hand: [...p.hand, drawnCard] } : p);
+      playFlyAnimation('deckCardBack', 'myHand', drawnCard, async () => {
+        let players = roomData.players.map(p => p.id === myPlayerId ? { ...p, hand: [...p.hand, drawnCard] } : p);
+        await db.from('rooms').update({ deck, players, has_drawn: true, last_action_notice: `📢 ${currentPlayer.name.toUpperCase()} mencangkul 1 kartu.` }).eq('id', currentRoomId);
+      });
+    }
 
-      await db.from('rooms').update({ 
-        deck, players, has_drawn: true, last_action_notice: `📢 ${currentPlayer.name.toUpperCase()} mencangkul 1 kartu.`
-      }).eq('id', currentRoomId);
+    function isValidFirstTake(me, targetCard, takeCount) {
+      let selectedCards = selectedIndices.map(i => me.hand[i]);
+      
+      if (targetCard.value === 'A') {
+        let handAsCount = me.hand.filter(c => c.value === 'A').length;
+        let selectedAsCount = selectedCards.filter(c => c.value === 'A').length;
+        if (handAsCount >= 2 && selectedAsCount === selectedCards.length && (selectedAsCount === 2 || selectedAsCount === 3)) {
+          return true;
+        }
+      }
+
+      if (selectedCards.length === 2 && takeCount === 1) {
+        let allSeqCards = [...selectedCards, targetCard];
+        let sameSuit = allSeqCards.every(c => c.suit === allSeqCards[0].suit);
+        if (sameSuit) {
+          const rankOrder = { '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9, '10':10, 'J':11, 'Q':12, 'K':13, 'A':14 };
+          let ranks = allSeqCards.map(c => rankOrder[c.value]).sort((a,b) => a - b);
+          if (ranks[1] === ranks[0] + 1 && ranks[2] === ranks[1] + 1) {
+            return true;
+          }
+        }
+      }
+      return false;
     }
 
     function promptTakeDiscard(takeIndexFromRight) {
@@ -349,32 +392,42 @@
       if (roomData.players[roomData.turn_index].id !== myPlayerId) return alert('Bukan giliran Anda!');
       if (roomData.has_drawn) return alert('Sudah mengambil kartu!');
 
-      pendingTakeCount = takeIndexFromRight;
+      let me = roomData.players.find(p => p.id === myPlayerId);
       let cardsToTake = roomData.discard_pile.slice(roomData.discard_pile.length - takeIndexFromRight);
+      let targetCard = cardsToTake[0];
 
+      if (!me.hasTakenFirstDiscard) {
+        if (selectedIndices.length === 0) {
+          return alert('🚨 PENGAMBILAN PERTAMA:\nAnda harus mengangkat/memilih kartu di tangan terlebih dahulu!\n- Minimal 2 kartu Seri yang sesuai dengan kartu buangan, ATAU\n- 2-3 Kartu AS di tangan untuk mengambil AS.');
+        }
+        if (!isValidFirstTake(me, targetCard, takeIndexFromRight)) {
+          return alert('🚨 SYARAT PENGAMBILAN PERTAMA BELUM TERPENUHI:\n- Untuk Seri: Pilih tepat 2 kartu di tangan yang urut & se-seri dengan buangan.\n- Untuk AS: Pilih 2 atau 3 kartu AS di tangan untuk digabungkan dengan buangan AS.');
+        }
+      }
+
+      pendingTakeCount = takeIndexFromRight;
       const previewDiv = document.getElementById('previewTakeCards');
       previewDiv.innerHTML = '';
       cardsToTake.forEach(c => previewDiv.appendChild(createCardUI(c)));
-
       document.getElementById('takeConfirmText').innerText = `Ambil ${takeIndexFromRight} kartu buangan?`;
       document.getElementById('confirmTakeModal').style.display = 'flex';
     }
 
-    function closeTakeModal() {
-      document.getElementById('confirmTakeModal').style.display = 'none';
-    }
+    function closeTakeModal() { document.getElementById('confirmTakeModal').style.display = 'none'; }
 
     async function executeTakeDiscard() {
       closeTakeModal();
       let discardPile = [...roomData.discard_pile];
       let takenCards = discardPile.splice(discardPile.length - pendingTakeCount, pendingTakeCount);
+      let me = roomData.players.find(p => p.id === myPlayerId);
 
-      let players = roomData.players.map(p => p.id === myPlayerId ? { ...p, hand: [...p.hand, ...takenCards], tookDiscard: true } : p);
+      let firstTakeFlag = me.hasTakenFirstDiscard ? me.hasTakenFirstDiscard : true;
 
-      await db.from('rooms').update({ 
-        discard_pile: discardPile, players, has_drawn: true,
-        last_action_notice: `📢 ${roomData.players[roomData.turn_index].name.toUpperCase()} mengambil buangan!`
-      }).eq('id', currentRoomId);
+      playFlyAnimation('discardPile', 'myHand', takenCards[0], async () => {
+        let players = roomData.players.map(p => p.id === myPlayerId ? { ...p, hand: [...p.hand, ...takenCards], tookDiscard: true, hasTakenFirstDiscard: firstTakeFlag } : p);
+        selectedIndices = [];
+        await db.from('rooms').update({ discard_pile: discardPile, players, has_drawn: true, last_action_notice: `📢 ${roomData.players[roomData.turn_index].name.toUpperCase()} mengambil buangan!` }).eq('id', currentRoomId);
+      });
     }
 
     function toggleSelectCard(idx) {
@@ -382,12 +435,22 @@
       renderGame();
     }
 
-    async function moveSelectedCard(dir) {
-      if (selectedIndices.length !== 1) return;
+    let touchStartX = 0;
+    function handleTouchStart(e, idx) { touchStartX = e.touches[0].clientX; }
+    function handleTouchEnd(e, idx) {
+      let touchEndX = e.changedTouches[0].clientX;
+      let diff = touchEndX - touchStartX;
+      if (Math.abs(diff) > 30) {
+        if (diff > 0) moveCardByIndex(idx, 'right');
+        else moveCardByIndex(idx, 'left');
+      } else {
+        toggleSelectCard(idx);
+      }
+    }
+
+    async function moveCardByIndex(idx, dir) {
       let me = roomData.players.find(p => p.id === myPlayerId);
       let hand = [...me.hand];
-      let idx = selectedIndices[0];
-
       if (dir === 'left' && idx > 0) {
         [hand[idx - 1], hand[idx]] = [hand[idx], hand[idx - 1]];
         selectedIndices = [idx - 1];
@@ -395,9 +458,13 @@
         [hand[idx + 1], hand[idx]] = [hand[idx], hand[idx + 1]];
         selectedIndices = [idx + 1];
       }
-
       let players = roomData.players.map(p => p.id === myPlayerId ? { ...p, hand } : p);
       await db.from('rooms').update({ players }).eq('id', currentRoomId);
+    }
+
+    async function moveSelectedCard(dir) {
+      if (selectedIndices.length !== 1) return alert('Pilih 1 kartu untuk digeser!');
+      moveCardByIndex(selectedIndices[0], dir);
     }
 
     async function toggleCeki() {
@@ -411,32 +478,26 @@
       let me = roomData.players.find(p => p.id === myPlayerId);
       let selectedCards = selectedIndices.map(i => me.hand[i]);
       let selectedIds = selectedCards.map(c => c.id);
-
       let newHand = me.hand.filter(c => !selectedIds.includes(c.id));
       let newMelds = [...(me.melds || []), selectedCards];
-
       let players = roomData.players.map(p => p.id === myPlayerId ? { ...p, hand: newHand, melds: newMelds } : p);
       selectedIndices = [];
-
       await db.from('rooms').update({ players }).eq('id', currentRoomId);
     }
 
     async function discardSelectedCard() {
       if (!roomData || !roomData.has_drawn || roomData.has_discarded) return;
-      if (selectedIndices.length !== 1) return alert('Pilih 1 kartu!');
-
+      if (selectedIndices.length !== 1) return alert('Pilih 1 kartu untuk dibuang!');
       let me = roomData.players.find(p => p.id === myPlayerId);
       let discardedCard = me.hand[selectedIndices[0]];
       let newHand = me.hand.filter(c => c.id !== discardedCard.id);
 
-      let players = roomData.players.map(p => p.id === myPlayerId ? { ...p, hand: newHand } : p);
-      let discardPile = [...(roomData.discard_pile || []), discardedCard];
-      selectedIndices = [];
-
-      await db.from('rooms').update({
-        players, discard_pile: discardPile, has_discarded: true, last_discard_by: myPlayerId,
-        last_action_notice: `🗑️ ${me.name.toUpperCase()} membuang ${discardedCard.value}${discardedCard.suit}`
-      }).eq('id', currentRoomId);
+      playFlyAnimation('myHand', 'discardPile', discardedCard, async () => {
+        let players = roomData.players.map(p => p.id === myPlayerId ? { ...p, hand: newHand } : p);
+        let discardPile = [...(roomData.discard_pile || []), discardedCard];
+        selectedIndices = [];
+        await db.from('rooms').update({ players, discard_pile: discardPile, has_discarded: true, last_discard_by: myPlayerId, last_action_notice: `🗑️ ${me.name.toUpperCase()} membuang ${discardedCard.value}${discardedCard.suit}` }).eq('id', currentRoomId);
+      });
     }
 
     async function resetMyScore() {
@@ -448,79 +509,74 @@
     async function confirmEndTurn() {
       if (!roomData || !roomData.has_discarded) return;
       let nextTurn = (roomData.turn_index + 1) % roomData.players.length;
-
       await db.from('rooms').update({ turn_index: nextTurn, has_drawn: false, has_discarded: false }).eq('id', currentRoomId);
+    }
+
+    // FUNGSI HITUNG NILAI KARTU SESUAI ATURAN BARU
+    // Gambar (J,Q,K): Turun=+10, Belum=-10
+    // Angka (2-10): Turun=+5, Belum=-5
+    // AS (A): Turun=+15, Belum=-15
+    function getCardScore(card, isMeld) {
+      if (card.type === 'picture') return isMeld ? 10 : -10;
+      if (card.type === 'ace') return isMeld ? 15 : -15;
+      return isMeld ? 5 : -5;
     }
 
     async function calculateAndEndGame(winnerId = null) {
       let players = roomData.players;
       let winner = players.find(p => p.id === winnerId);
       let isNoDiscardWinner = winner && !winner.tookDiscard;
-
       let anyTookDiscard = players.some(p => p.tookDiscard);
       let anyHasMelds = players.some(p => p.melds && p.melds.length > 0);
-
       let finalScores = {};
 
       if (!anyTookDiscard && !anyHasMelds && !winnerId) {
         players.forEach(p => finalScores[p.id] = { total: 0, detail: 'Game Seri - Tanpa Poin' });
       } else if (winnerId && isNoDiscardWinner) {
-        players.forEach(p => {
-          finalScores[p.id] = p.id === winnerId ? { total: 250, detail: 'Tutup Tangan Tanpa Buangan (+250)' } : { total: 0, detail: 'Lawan Tutup Tangan Murni (0)' };
-        });
+        players.forEach(p => { finalScores[p.id] = p.id === winnerId ? { total: 250, detail: 'Tutup Tangan Tanpa Buangan (+250)' } : { total: 0, detail: 'Lawan Tutup Tangan Murni (0)' }; });
       } else {
         let lastDiscarderId = roomData.last_discard_by;
         let isCekiPenaltyApplied = winner && winner.isCeki && winner.tookDiscard && lastDiscarderId && lastDiscarderId !== winnerId;
-
+        
         players.forEach(p => {
           let meldPts = 0;
           if (p.melds) {
-            p.melds.forEach(g => g.forEach(c => meldPts += (c.type === 'number' ? 50 : c.type === 'picture' ? 100 : 150)));
+            p.melds.forEach(g => g.forEach(c => meldPts += getCardScore(c, true)));
           }
-
           let remainingMinus = 0;
           if (p.hand) {
-            p.hand.forEach(c => remainingMinus -= (c.type === 'number' ? 50 : c.type === 'picture' ? 100 : 150));
+            p.hand.forEach(c => remainingMinus += getCardScore(c, false)); // sudah bernilai negatif (-10, -5, -15)
           }
 
           let total = meldPts + remainingMinus;
           let detailMsg = `Kartu Jadi: +${meldPts}, Belum Jadi: ${remainingMinus}`;
-
-          if (p.id === winnerId) {
-            total += 50;
-            detailMsg += ` | Bonus Win: +50`;
+          if (p.id === winnerId) { total += 50; detailMsg += ` | Bonus Win: +50`; }
+          
+          if (p.id === lastDiscarderId && isCekiPenaltyApplied) { 
+            // Penalti kecebur dihitung berdasarkan jumlah kartu di tangan
+            let handLen = p.hand ? p.hand.length : 0;
+            let penalty = 0;
+            p.hand.forEach(c => {
+              let val = (c.type === 'picture' ? 10 : c.type === 'ace' ? 15 : 5);
+              penalty += val;
+            });
+            total -= penalty; 
+            detailMsg += ` | ⚠️ PENALTI BUANG CEKIAN (-${penalty})`; 
           }
-
-          if (p.id === lastDiscarderId && isCekiPenaltyApplied) {
-            let penalty = 50 * ((p.hand ? p.hand.length : 0) + 1);
-            total -= penalty;
-            detailMsg += ` | ⚠️ PENALTI BUANG CEKIAN (-${penalty})`;
-          }
-
           finalScores[p.id] = { total, detail: detailMsg };
         });
       }
 
       let overScorePlayers = [];
-
       let updatedPlayers = players.map(p => {
         let newScore = (p.score || 0) + (finalScores[p.id] ? finalScores[p.id].total : 0);
-        if (newScore >= 100) {
-          overScorePlayers.push(`${p.name.toUpperCase()} (${newScore}pt)`);
-        }
+        if (newScore >= 100) overScorePlayers.push(`${p.name.toUpperCase()} (${newScore}pt)`);
         return { ...p, score: newScore, lastGameScore: finalScores[p.id] };
       });
 
       let noticeText = `🏆 HITUNG SKOR SELESAI! Pemenang: ${winner ? winner.name.toUpperCase() : 'SERI'}`;
-      if (overScorePlayers.length > 0) {
-        noticeText += ` | 🚨 MELEWATI SKOR 100: ${overScorePlayers.join(', ')}`;
-      }
-
-      await db.from('rooms').update({
-        is_game_over: true,
-        players: updatedPlayers,
-        last_action_notice: noticeText
-      }).eq('id', currentRoomId);
+      if (overScorePlayers.length > 0) noticeText += ` | 🚨 MELEWATI SKOR 100: ${overScorePlayers.join(', ')}`;
+      await db.from('rooms').update({ is_game_over: true, players: updatedPlayers, last_action_notice: noticeText }).eq('id', currentRoomId);
     }
 
     async function endGame() {
@@ -536,158 +592,133 @@
 
     function renderGame() {
       if (!roomData) return;
+      
+      let msgs = roomData.chat_messages || [];
+      if (lastMessageCount === 0 && msgs.length > 0) {
+         lastMessageCount = msgs.length;
+      } else if (msgs.length > lastMessageCount) {
+         for (let i = lastMessageCount; i < msgs.length; i++) {
+            let m = msgs[i];
+            let authorKey = (m.author || '').trim().toLowerCase();
+            if (activePopups[authorKey] && activePopups[authorKey].timeoutId) {
+               clearTimeout(activePopups[authorKey].timeoutId);
+            }
+            activePopups[authorKey] = {
+               text: m.text,
+               timeoutId: setTimeout(() => {
+                   delete activePopups[authorKey];
+                   renderGame();
+               }, 3500)
+            };
+         }
+         lastMessageCount = msgs.length;
+      }
 
       const isHost = roomData.players[0].id === myPlayerId;
       const remainingDeck = roomData.deck ? roomData.deck.length : 0;
       const anyPlayerZeroCards = roomData.players.some(p => p.hand && p.hand.length === 0);
-
       const btnEndGame = document.getElementById('endGameBtn');
       if (roomData.game_started && !roomData.is_game_over && isHost) {
         btnEndGame.style.display = 'inline-block';
-        if (remainingDeck === 0 || anyPlayerZeroCards) {
-          btnEndGame.innerText = '🔔 HITUNG SKOR SEKARANG';
-          btnEndGame.className = 'btn-action go';
-        } else {
-          btnEndGame.innerText = 'SELESAI GAME';
-          btnEndGame.className = 'btn-action danger';
-        }
-      } else {
-        btnEndGame.style.display = 'none';
-      }
+        if (remainingDeck === 0 || anyPlayerZeroCards) { btnEndGame.innerText = '🔔 HITUNG SKOR SEKARANG'; btnEndGame.className = 'btn-action go'; }
+        else { btnEndGame.innerText = 'SELESAI GAME'; btnEndGame.className = 'btn-action danger'; }
+      } else { btnEndGame.style.display = 'none'; }
 
       document.getElementById('startBtn').style.display = (!roomData.game_started && isHost && !roomData.is_game_over) ? 'inline-block' : 'none';
-
       const currentPlayer = roomData.players[roomData.turn_index];
       const isMyTurn = currentPlayer.id === myPlayerId;
       
       let turnText = 'MENUNGGU PEMAIN...';
       if (roomData.game_started && !roomData.is_game_over) {
         turnText = isMyTurn ? (!roomData.has_drawn ? 'GILIRAN ANDA: Ambil Kartu!' : (!roomData.has_discarded ? 'GILIRAN ANDA: Buang Kartu!' : 'GILIRAN ANDA: Klik GO!')) : `GILIRAN: ${currentPlayer.name.toUpperCase()}`;
-      } else if (roomData.is_game_over) {
-        turnText = 'GAME OVER';
-      }
+      } else if (roomData.is_game_over) { turnText = 'GAME OVER'; }
 
       const noticeDiv = document.getElementById('actionNotice');
       if (roomData.game_started && !roomData.is_game_over) {
-        if (remainingDeck === 0) {
-          noticeDiv.innerText = isHost 
-            ? "🔔 KARTU CANGKULAN HABIS! Klik 'HITUNG SKOR SEKARANG' di kanan atas."
-            : "🔔 Kartu cangkulan habis! Menunggu Pembuat Room menghitung skor...";
-          noticeDiv.style.display = 'block';
-        } else if (anyPlayerZeroCards) {
-          noticeDiv.innerText = isHost 
-            ? "🔔 ADA PEMAIN TUTUP KARTU! Klik 'HITUNG SKOR SEKARANG' di kanan atas."
-            : "🔔 Ada pemain tutup kartu! Menunggu Pembuat Room menghitung skor...";
-          noticeDiv.style.display = 'block';
-        } else if (roomData.last_action_notice) {
-          noticeDiv.innerText = roomData.last_action_notice;
-          noticeDiv.style.display = 'block';
-        } else {
-          noticeDiv.style.display = 'none';
-        }
-      } else {
-        noticeDiv.style.display = 'none';
-      }
+        if (remainingDeck === 0) { noticeDiv.innerText = isHost ? "🔔 KARTU CANGKULAN HABIS! Klik 'HITUNG SKOR SEKARANG'." : "🔔 Menunggu Pembuat Room menghitung skor..."; noticeDiv.style.display = 'block'; }
+        else if (anyPlayerZeroCards) { noticeDiv.innerText = isHost ? "🔔 ADA PEMAIN TUTUP KARTU! Klik 'HITUNG SKOR SEKARANG'." : "🔔 Menunggu Pembuat Room menghitung skor..."; noticeDiv.style.display = 'block'; }
+        else if (roomData.last_action_notice) { noticeDiv.innerText = roomData.last_action_notice; noticeDiv.style.display = 'block'; }
+        else { noticeDiv.style.display = 'none'; }
+      } else { noticeDiv.style.display = 'none'; }
 
       document.getElementById('turnStatus').innerText = turnText;
       document.getElementById('goBtn').style.display = (isMyTurn && roomData.has_discarded && !roomData.is_game_over) ? 'inline-block' : 'none';
 
       const me = roomData.players.find(p => p.id === myPlayerId);
-      
       const modal = document.getElementById('gameOverModal');
       if (roomData.is_game_over) {
         modal.style.display = 'flex';
         document.getElementById('rematchBtn').style.display = isHost ? 'inline-block' : 'none';
-
         let scoreListHTML = '';
         let highestScore = -99999;
         let winnerName = 'SERI';
-
         roomData.players.forEach(p => {
           let scoreData = p.lastGameScore || { total: 0, detail: '-' };
-          if (scoreData.total > highestScore) {
-            highestScore = scoreData.total;
-            winnerName = p.name.toUpperCase();
-          }
-          
+          if (scoreData.total > highestScore) { highestScore = scoreData.total; winnerName = p.name.toUpperCase(); }
           let overBadge = (p.score >= 100) ? ' <span style="color:#e74c3c; font-weight:bold;">[SKOR 100+]</span>' : '';
-
-          scoreListHTML += `
-            <div class="score-item">
-              <div class="score-header-row">
-                <span>${p.name.toUpperCase()}${overBadge} (Total Skor: ${p.score || 0}pt)</span>
-                <span style="color:var(--gold-light);">${scoreData.total >= 0 ? '+' : ''}${scoreData.total} pt</span>
-              </div>
-              <div class="score-detail">${scoreData.detail}</div>
-            </div>
-          `;
+          scoreListHTML += `<div class="score-item"><div class="score-header-row"><span>${p.name.toUpperCase()}${overBadge} (Total: ${p.score || 0}pt)</span><span style="color:var(--gold-light);">${scoreData.total >= 0 ? '+' : ''}${scoreData.total} pt</span></div><div class="score-detail">${scoreData.detail}</div></div>`;
         });
-
         document.getElementById('winnerTitle').innerText = `PEMENANG: ${winnerName} (${highestScore}pt)`;
         document.getElementById('scoreList').innerHTML = scoreListHTML;
-      } else {
-        modal.style.display = 'none';
-      }
+      } else { modal.style.display = 'none'; }
 
       const oppArea = document.getElementById('opponentsArea');
       oppArea.innerHTML = '';
       roomData.players.filter(p => p.id !== myPlayerId).forEach(opp => {
         let box = document.createElement('div');
         box.className = 'opponent-box' + (opp.isCeki ? ' is-ceki' : '');
-        
         let lastScore = opp.lastGameScore ? opp.lastGameScore.total : 0;
         let lastScoreTxt = lastScore >= 0 ? `+${lastScore}` : `${lastScore}`;
         let overTag = (opp.score >= 100) ? ' <span style="color:#e74c3c; font-weight:bold;">🚨100+</span>' : '';
-
-        box.innerHTML = `
-          <div class="opponent-name">${opp.name.toUpperCase()} ${opp.isCeki ? '<span class="ceki-tag">CEKI!</span>' : ''}${overTag}</div>
-          <div class="card-count-badge">🂠 ${opp.hand ? opp.hand.length : 0} Kartu | Skor: ${opp.score || 0} (${lastScoreTxt})</div>
-        `;
+        box.innerHTML = `<div class="opponent-name">${opp.name.toUpperCase()} ${opp.isCeki ? '<span class="ceki-tag">CEKI!</span>' : ''}${overTag}</div><div class="card-count-badge">🂠 ${opp.hand ? opp.hand.length : 0} Kartu | Skor: ${opp.score || 0} (${lastScoreTxt})</div>`;
         
+        let oppKey = opp.name.trim().toLowerCase();
+        if (activePopups[oppKey]) {
+           let bubble = document.createElement('div');
+           bubble.className = 'chat-bubble opponent-bubble';
+           bubble.innerText = activePopups[oppKey].text;
+           box.appendChild(bubble);
+        }
+
         let meldsDiv = document.createElement('div');
         meldsDiv.className = 'melds-container';
-        if (opp.melds && opp.melds.length > 0) {
-          opp.melds.forEach(g => {
-            let grp = document.createElement('div'); grp.className = 'meld-group';
-            g.forEach(c => grp.appendChild(createCardUI(c)));
-            meldsDiv.appendChild(grp);
-          });
-        }
-        box.appendChild(meldsDiv);
-        oppArea.appendChild(box);
+        if (opp.melds && opp.melds.length > 0) { opp.melds.forEach(g => { let grp = document.createElement('div'); grp.className = 'meld-group'; g.forEach(c => grp.appendChild(createCardUI(c))); meldsDiv.appendChild(grp); }); }
+        box.appendChild(meldsDiv); oppArea.appendChild(box);
       });
 
       const myMeldsDiv = document.getElementById('myMelds');
       myMeldsDiv.innerHTML = '';
-      if (me && me.melds) {
-        me.melds.forEach(g => {
-          let grp = document.createElement('div'); grp.className = 'meld-group';
-          g.forEach(c => grp.appendChild(createCardUI(c)));
-          myMeldsDiv.appendChild(grp);
-        });
-      }
+      if (me && me.melds) { me.melds.forEach(g => { let grp = document.createElement('div'); grp.className = 'meld-group'; g.forEach(c => grp.appendChild(createCardUI(c))); myMeldsDiv.appendChild(grp); }); }
 
       let myLastScore = me && me.lastGameScore ? me.lastGameScore.total : 0;
       let myLastTxt = myLastScore >= 0 ? `+${myLastScore}` : `${myLastScore}`;
-      document.getElementById('myHandCountTitle').innerText = `PEMAIN: ${me ? me.name.toUpperCase() : 'ANDA'} | SKOR AKUMULASI: ${me ? me.score || 0 : 0} (Game Terakhir: ${myLastTxt})`;
+      document.getElementById('myHandCountTitle').innerText = `PEMAIN: ${me ? me.name.toUpperCase() : 'ANDA'} | SKOR: ${me ? me.score || 0 : 0} (Game Terakhir: ${myLastTxt})`;
+
+      const dock = document.querySelector('.player-dock');
+      let oldBubble = document.getElementById('myChatBubble');
+      if (oldBubble) oldBubble.remove();
+
+      if (me) {
+         let myKey = me.name.trim().toLowerCase();
+         if (activePopups[myKey]) {
+            let bubble = document.createElement('div');
+            bubble.id = 'myChatBubble';
+            bubble.className = 'chat-bubble my-bubble';
+            bubble.innerText = activePopups[myKey].text;
+            dock.appendChild(bubble);
+         }
+      }
 
       const deckZone = document.getElementById('deckZone');
-      deckZone.innerHTML = `
-        <div class="zone-title">CANGKULAN (${remainingDeck})</div>
-        <div class="card-back" onclick="drawCard()" title="Klik untuk cangkul 1 kartu"></div>
-      `;
+      deckZone.innerHTML = `<div class="zone-title">CANGKULAN (${remainingDeck})</div><div class="card-back" id="deckCardBack" onclick="drawCard()" title="Klik untuk cangkul 1 kartu"></div>`;
 
       const discardDiv = document.getElementById('discardPile');
       discardDiv.innerHTML = '';
       const pile = roomData.discard_pile || [];
-
       pile.forEach((card, idx) => {
         let el = createCardUI(card);
         let takeIndex = pile.length - idx;
-        if (takeIndex <= 7) {
-          el.classList.add('takeable');
-          el.onclick = () => promptTakeDiscard(takeIndex);
-        }
+        if (takeIndex <= 7) { el.classList.add('takeable'); el.onclick = () => promptTakeDiscard(takeIndex); }
         discardDiv.appendChild(el);
       });
 
@@ -697,31 +728,31 @@
         me.hand.forEach((card, idx) => {
           let el = createCardUI(card);
           if (selectedIndices.includes(idx)) el.classList.add('selected');
+          
           el.onclick = () => toggleSelectCard(idx);
+          el.addEventListener('touchstart', (e) => handleTouchStart(e, idx), {passive: true});
+          el.addEventListener('touchend', (e) => handleTouchEnd(e, idx));
+
           handDiv.appendChild(el);
         });
       }
-
       renderChat();
     }
 
     function createCardUI(card) {
       let div = document.createElement('div');
       div.className = 'card' + (card.isRed ? ' red' : '');
-      div.innerHTML = `<div class="card-val">${card.value}</div><div class="card-suit">${card.suit}</div><div class="card-center-suit">${card.suit}</div><div class="card-pts">${card.points}pt</div>`;
+      div.innerHTML = `<div class="card-val">${card.value}</div><div class="card-suit">${card.suit}</div><div class="card-center-suit">${card.suit}</div>`;
       return div;
     }
 
-    // ================= CHAT & VOICE WEBRTC =================
     async function sendChatMessage() {
       const input = document.getElementById('chatInput');
       const text = input.value.trim();
       if (!text || !roomData) return;
-
       let me = roomData.players.find(p => p.id === myPlayerId);
       let messages = roomData.chat_messages || [];
       messages.push({ author: me ? me.name : 'Pemain', text, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-
       input.value = '';
       await db.from('rooms').update({ chat_messages: messages }).eq('id', currentRoomId);
     }
@@ -741,140 +772,160 @@
       chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    // ================= CHAT & VOICE WEBRTC (DENGAN AUTO-RECONNECT) =================
-    // (Pertahankan bagian kode chat di atasnya)
-
     function setupVoiceSignaling() {
       rtcChannel = db.channel(`rtc_${currentRoomId}`, { config: { broadcast: { ack: false } } });
-      rtcChannel
-        .on('broadcast', { event: 'signal' }, async ({ payload }) => {
-          if (payload.target === myPlayerId) {
-            let pc = getOrCreatePeer(payload.from);
-            
-            try {
-              if (payload.sdp) {
-                await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
-                if (payload.sdp.type === 'offer') {
-                  let answer = await pc.createAnswer();
-                  await pc.setLocalDescription(answer);
-                  rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: payload.from, sdp: answer } });
-                }
-              } else if (payload.candidate) {
-                // Pastikan remote description sudah ada sebelum menambah candidate
-                if (pc.remoteDescription && pc.remoteDescription.type) {
-                  await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
-                }
-              } else if (payload.type === 'ping') {
-                // Menerima ping untuk menjaga koneksi tetap hidup
-                // console.log('Ping received from', payload.from);
+      rtcChannel.on('broadcast', { event: 'signal' }, async ({ payload }) => {
+        if (payload.target === myPlayerId) {
+          let pc = getOrCreatePeer(payload.from);
+          try {
+            if (payload.sdp) {
+              await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+              if (payload.sdp.type === 'offer') {
+                let answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: payload.from, sdp: answer } });
               }
-            } catch (e) {
-              console.error("WebRTC Error:", e);
+            } else if (payload.candidate) {
+              if (pc.remoteDescription && pc.remoteDescription.type) await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
             }
-          }
-        })
-        .subscribe();
+          } catch (e) { console.error("WebRTC Error:", e); }
+        }
+      }).subscribe();
         
-      // Jalankan interval Ping setiap 15 detik agar koneksi tidak ditutup oleh router
       setInterval(() => {
-        if (isMicActive && roomData && roomData.players) {
-          roomData.players.filter(p => p.id !== myPlayerId).forEach(p => {
-             rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { type: 'ping', from: myPlayerId, target: p.id } });
-          });
+        if (window.isMicActive && roomData && roomData.players) {
+          roomData.players.filter(p => p.id !== myPlayerId).forEach(p => { rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { type: 'ping', from: myPlayerId, target: p.id } }); });
         }
       }, 15000);
     }
 
     function getOrCreatePeer(peerId) {
       if (peerConnections[peerId]) {
-        // Jika status terputus, paksa restart
         if (peerConnections[peerId].connectionState === 'disconnected' || peerConnections[peerId].connectionState === 'failed') {
-           peerConnections[peerId].close();
+           peerConnections[peerId].close(); 
            delete peerConnections[peerId];
-        } else {
-           return peerConnections[peerId];
+        } else { 
+           return peerConnections[peerId]; 
         }
       }
       
       let pc = new RTCPeerConnection(rtcConfig);
-
-      if (localStream) {
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      }
+      if (localStream) localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
       pc.ontrack = (e) => {
         let audioId = `audio_peer_${peerId}`;
         let audioEl = document.getElementById(audioId);
-        if (!audioEl) {
-          audioEl = document.createElement('audio');
-          audioEl.id = audioId;
-          audioEl.autoplay = true;
-          document.body.appendChild(audioEl);
+        if (!audioEl) { 
+          audioEl = document.createElement('audio'); 
+          audioEl.id = audioId; 
+          audioEl.autoplay = true; 
+          document.body.appendChild(audioEl); 
         }
         audioEl.srcObject = e.streams[0];
-      };
+        audioEl.muted = window.isSpeakerMuted;
 
-      pc.onicecandidate = (e) => {
-        if (e.candidate) {
-          rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: peerId, candidate: e.candidate } });
+        if (e.track) {
+          e.track.enabled = !window.isSpeakerMuted;
         }
       };
+
+      pc.onicecandidate = (e) => { if (e.candidate) rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: peerId, candidate: e.candidate } }); };
       
-      // Auto-Reconnect jika koneksi terputus
       pc.onconnectionstatechange = async () => {
         if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-            console.log("Koneksi terputus dengan " + peerId + ". Mencoba menyambung ulang...");
-            if (isMicActive) {
+            if (window.isMicActive) {
                 try {
-                    // Buat penawaran ulang (ICE Restart)
                     let offer = await pc.createOffer({ iceRestart: true });
                     await pc.setLocalDescription(offer);
                     rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: peerId, sdp: offer } });
-                } catch(err) {
-                    console.error("Gagal reconnect:", err);
-                }
+                } catch(err) {}
             }
         }
       };
-
       peerConnections[peerId] = pc;
       return pc;
     }
 
-    async function toggleMic() {
+    window.toggleSpeaker = function() {
+      const speakerBtn = document.getElementById('speakerBtn');
+      if (!speakerBtn) return;
+
+      window.isSpeakerMuted = !window.isSpeakerMuted;
+
+      document.querySelectorAll('audio').forEach(audio => {
+        audio.muted = window.isSpeakerMuted;
+      });
+
+      if (typeof peerConnections !== 'undefined') {
+        Object.values(peerConnections).forEach(pc => {
+          pc.getReceivers().forEach(receiver => {
+            if (receiver.track && receiver.track.kind === 'audio') {
+              receiver.track.enabled = !window.isSpeakerMuted;
+            }
+          });
+        });
+      }
+
+      if (window.isSpeakerMuted) {
+        speakerBtn.innerText = '🔇';
+        speakerBtn.classList.remove('active');
+        speakerBtn.classList.add('muted');
+        speakerBtn.title = "Audio Mute (Bisu)";
+      } else {
+        speakerBtn.innerText = '🔊';
+        speakerBtn.classList.add('active');
+        speakerBtn.classList.remove('muted');
+        speakerBtn.title = "Audio Dengar (Aktif)";
+      }
+    };
+
+    window.toggleMic = async function() {
       const micBtn = document.getElementById('micBtn');
-      if (!isMicActive) {
+      if (!micBtn) return;
+
+      if (!localStream) {
         try {
           localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          isMicActive = true;
-          micBtn.classList.add('active');
+          window.isMicActive = true;
+          updateMicUI(true);
 
-          if(roomData && roomData.players) {
+          if (roomData && roomData.players) {
             roomData.players.filter(p => p.id !== myPlayerId).forEach(async (p) => {
               let pc = getOrCreatePeer(p.id);
               let senders = pc.getSenders();
-              let hasAudio = senders.some(s => s.track && s.track.kind === 'audio');
-              if(!hasAudio) {
-                  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+              if (!senders.some(s => s.track && s.track.kind === 'audio')) {
+                localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
               }
               let offer = await pc.createOffer();
               await pc.setLocalDescription(offer);
-              rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: p.id, sdp: offer } });
+              if (rtcChannel) {
+                rtcChannel.send({ type: 'broadcast', event: 'signal', payload: { from: myPlayerId, target: p.id, sdp: offer } });
+              }
             });
           }
         } catch (err) {
           alert('Gagal akses microphone: ' + err.message);
         }
       } else {
-        if (localStream) localStream.getTracks().forEach(track => track.stop());
-        isMicActive = false;
+        window.isMicActive = !window.isMicActive;
+        localStream.getAudioTracks().forEach(track => track.enabled = window.isMicActive);
+        updateMicUI(window.isMicActive);
+      }
+    };
+
+    function updateMicUI(active) {
+      const micBtn = document.getElementById('micBtn');
+      if (!micBtn) return;
+      if (active) {
+        micBtn.innerText = '🎙️';
+        micBtn.classList.add('active');
+        micBtn.classList.remove('muted');
+        micBtn.title = "Mic Aktif (Bicara)";
+      } else {
+        micBtn.innerText = '🎙️❌';
         micBtn.classList.remove('active');
-        
-        // Tutup semua koneksi saat mic dimatikan
-        Object.keys(peerConnections).forEach(id => {
-            peerConnections[id].close();
-            delete peerConnections[id];
-        });
+        micBtn.classList.add('muted');
+        micBtn.title = "Mic Mute";
       }
     }
   </script>
