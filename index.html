@@ -89,14 +89,18 @@
           <div class="zone-title" id="myHandCountTitle" style="color: var(--gold-light);">KARTU TANGAN KAMU</div>
           <div class="hand-cards" id="myHand"></div>
 
-          <div class="action-bar">
-            <button class="btn-action" onclick="moveSelectedCard('left')">◄ GESER KIRI</button>
-            <button class="btn-action" onclick="moveSelectedCard('right')">GESER KANAN ►</button>
-            <button class="btn-action active" onclick="submitMeld()">TURUNKAN SET (TRIS/SERI/AS)</button>
-            <button class="btn-action" onclick="discardSelectedCard()">BUANG KARTU</button>
-            <button class="btn-action warning" onclick="resetMyScore()">RESET SKOR (0)</button>
-            <button id="goBtn" class="btn-action go" onclick="confirmEndTurn()" style="display:none;">SELESAI GILIRAN (GO) ➔</button>
-            <button id="cekiBtn" class="btn-action" onclick="toggleCeki()">DEKLARASI "CEKI!"</button>
+          <div class="action-bar" style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-action" onclick="moveSelectedCard('left')">◄ GESER</button>
+            <button class="btn-action" onclick="moveSelectedCard('right')">GESER ►</button>
+            <button class="btn-action active" onclick="submitMeld()">TURUNKAN SET</button>
+            
+            <!-- Tombol Utama Kotak Besar: Buang Kartu / GO (Hijau) -->
+            <div id="dynamicActionButtonContainer" style="display: inline-block;">
+              <button id="primaryActionBtn" class="btn-discard-box" onclick="handlePrimaryActionButton()">🗑️ BUANG KARTU</button>
+            </div>
+
+            <button class="btn-action warning" onclick="resetMyScore()">RESET (0)</button>
+            <button id="cekiBtn" class="btn-action danger" onclick="toggleCeki()">CEKI!</button>
           </div>
         </div>
       </div>
@@ -469,7 +473,7 @@
       });
     }
 
-    function handleDiscardClick(takeIndexFromRight) {
+   function handleDiscardClick(takeIndexFromRight) {
       if (!roomData || !roomData.game_started || roomData.is_game_over) return;
       if (roomData.players[roomData.turn_index].id !== myPlayerId) return alert('Bukan giliran Anda!');
       if (roomData.has_drawn) return alert('Sudah mengambil kartu!');
@@ -485,22 +489,20 @@
       let isSeri = false;
       let isAsQuartet = false;
 
-      // 1. Cek 4 Kartu AS (3 As di tangan + 1 As buangan teratas)
       if (targetCard.value === 'A') {
         let handAsCount = selectedCards.filter(c => c.value === 'A').length;
-        if (selectedCards.length === 3 && handAsCount === 3 && takeIndexFromRight === 1) {
+        let totalAs = handAsCount + takeIndexFromRight;
+        if (totalAs === 4 && selectedCards.length === takeIndexFromRight) {
           isAsQuartet = true;
         }
       }
 
-      // 2. Cek Tris (2 kartu di tangan bernilai sama persis dengan buangan, misal 2 hati & 2 keriting ambil 2 wajik)
-      if (!isAsQuartet && selectedCards.length === 2 && takeIndexFromRight === 1) {
+      if (!isAsQuartet && selectedCards.length === 2) {
         if (selectedCards[0].value === targetCard.value && selectedCards[1].value === targetCard.value) {
           isTris = true;
         }
       }
 
-      // 3. Cek Seri (2 kartu di tangan + 1 buangan se-suit jarak 1, tanpa AS)
       if (!isAsQuartet && selectedCards.length === 2) {
         let allSeqCards = [...selectedCards, targetCard];
         let hasAce = allSeqCards.some(c => c.value === 'A');
@@ -515,19 +517,19 @@
         }
       }
 
-      // SYARAT MUTLAK: Tris atau 4 As hanya bisa diambil jika sudah ada set Seri (tanpa AS) yang diturunkan ke meja
-      if (isTris || isAsQuartet) {
-        let hasValidSeriOnTable = me.melds && me.melds.some(meld => {
+      if (isTris) {
+        let hasValidSeriOrAsOnTable = me.melds && me.melds.some(meld => {
           let isMeldSeri = !meld.some(c => c.value === 'A') && meld.every(c => c.suit === meld[0].suit);
-          return isMeldSeri;
+          let isMeldAs = meld.length === 4 && meld.every(c => c.value === 'A');
+          return isMeldSeri || isMeldAs;
         });
-        if (!hasValidSeriOnTable) {
-          return alert('🚨 ATURAN CEKI:\nKamu BELUM BISA mengambil TRIS / 4 AS dari buangan sebelum ada minimal 1 set SERI (urutan tanpa AS) yang sudah diturunkan ke meja terlebih dahulu!');
+        if (!hasValidSeriOrAsOnTable) {
+          return alert('🚨 ATURAN CEKI:\nKamu BELUM BISA mengambil TRIS / Tris As dari buangan sebelum ada minimal 1 set SERI atau 4 KARTU AS yang sudah diturunkan ke meja terlebih dahulu!');
         }
       }
 
       if (!isTris && !isSeri && !isAsQuartet) {
-        return alert('🚨 KARTU TIDAK VALID:\n- Untuk Seri: 2 kartu di tangan harus se-suit, berurutan jarak 1, dan tidak ada AS.\n- Untuk Tris: 2 kartu di tangan harus bernilai sama persis (misal 2 angka/gambar sama untuk ambil buangan).\n- Untuk 4 As: Pilih 3 kartu AS di tangan.');
+        return alert('🚨 KARTU TIDAK VALID:\n- Untuk Seri: 2 kartu di tangan harus se-suit, berurutan jarak 1, dan tidak ada AS.\n- Untuk Tris: 2 kartu di tangan harus bernilai sama persis dengan kartu buangan.\n- Untuk 4 As: Total kartu AS (tangan + buangan) harus pas 4 lembar.');
       }
 
       pendingTakeCount = takeIndexFromRight;
@@ -544,11 +546,26 @@
       closeTakeModal();
       let discardPile = [...roomData.discard_pile];
       let takenCards = discardPile.splice(discardPile.length - pendingTakeCount, pendingTakeCount);
+      let me = roomData.players.find(p => p.id === myPlayerId);
+
+      let takenCardLabels = takenCards.map(c => `${c.value}${c.suit}`).join(' ');
+      let chatMsgs = roomData.chat_messages || [];
+      chatMsgs.push({ 
+        author: me.name, 
+        text: `📥 Mengambil kartu buangan: [ ${takenCardLabels} ]`, 
+        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+      });
 
       playFlyAnimation('discardPile', 'myHand', takenCards[0], async () => {
         let players = roomData.players.map(p => p.id === myPlayerId ? { ...p, hand: [...p.hand, ...takenCards], tookDiscard: true } : p);
         selectedIndices = [];
-        await updateRoomBackend({ discard_pile: discardPile, players, has_drawn: true, last_action_notice: `📢 ${roomData.players[roomData.turn_index].name.toUpperCase()} mengambil buangan!` });
+        await updateRoomBackend({ 
+          discard_pile: discardPile, 
+          players, 
+          has_drawn: true, 
+          chat_messages: chatMsgs,
+          last_action_notice: `📢 ${me.name.toUpperCase()} mengambil ${takenCards.length} kartu buangan!` 
+        });
       });
     }
 
@@ -607,7 +624,7 @@
       let isAsQuartet = (selectedCards.length === 4 && selectedCards.every(c => c.value === 'A'));
 
       let hasAce = selectedCards.some(c => c.value === 'A');
-      if (!hasAce) {
+      if (!hasAce && selectedCards.length >= 3) {
         let sameSuit = selectedCards.every(c => c.suit === selectedCards[0].suit);
         if (sameSuit) {
           let ranks = selectedCards.map(c => rankOrder[c.value]).sort((a,b) => a - b);
@@ -621,13 +638,14 @@
 
       if (!isTris && !isSeri && !isAsQuartet) return alert('Set kartu harus berupa Tris (nilai sama), Seri (se-suit berurutan tanpa AS), atau 4 Kartu AS!');
 
-      if (isTris || isAsQuartet) {
-        let hasValidSeriOnTable = me.melds && me.melds.some(meld => {
+      if (isTris && !isAsQuartet) {
+        let hasValidOpenOnTable = me.melds && me.melds.some(meld => {
           let isMeldSeri = !meld.some(c => c.value === 'A') && meld.every(c => c.suit === meld[0].suit);
-          return isMeldSeri;
+          let isMeldAs = meld.length === 4 && meld.every(c => c.value === 'A');
+          return isMeldSeri || isMeldAs;
         });
-        if (!hasValidSeriOnTable) {
-          return alert('🚨 ATURAN MAIN:\nKamu harus menurunkan set SERI (tanpa AS) terlebih dahulu ke meja sebelum bisa menurunkan set TRIS atau 4 KARTU AS!');
+        if (!hasValidOpenOnTable) {
+          return alert('🚨 ATURAN MAIN:\nKamu harus menurunkan set SERI (tanpa AS) atau 4 KARTU AS terlebih dahulu ke meja sebelum bisa menurunkan set TRIS!');
         }
       }
 
@@ -642,6 +660,18 @@
       let winner = players.find(p => p.id === myPlayerId && p.hand.length === 0);
       if (winner) {
         calculateAndEndGame(myPlayerId);
+      }
+    }
+
+    function handlePrimaryActionButton() {
+      if (!roomData) return;
+      let currentPlayer = roomData.players[roomData.turn_index];
+      let isMyTurn = currentPlayer.id === myPlayerId;
+
+      if (isMyTurn && roomData.has_discarded) {
+        confirmEndTurn();
+      } else {
+        discardSelectedCard();
       }
     }
 
@@ -874,7 +904,16 @@
       } else { noticeDiv.style.display = 'none'; }
 
       document.getElementById('turnStatus').innerText = turnText;
-      document.getElementById('goBtn').style.display = (isMyTurn && roomData.has_discarded && !roomData.is_game_over) ? 'inline-block' : 'none';
+      
+      // Tombol Aksi Utama: Berubah jadi GO warna Hijau penuh jika sudah membuang kartu
+      const primaryActionBtn = document.getElementById('primaryActionBtn');
+      if (isMyTurn && roomData.has_discarded && !roomData.is_game_over) {
+        primaryActionBtn.innerHTML = 'SELESAI GILIRAN (GO) ➔';
+        primaryActionBtn.className = 'btn-discard-box go-active';
+      } else {
+        primaryActionBtn.innerHTML = '🗑️ BUANG KARTU';
+        primaryActionBtn.className = 'btn-discard-box';
+      }
 
       const me = roomData.players.find(p => p.id === myPlayerId);
       
@@ -898,7 +937,28 @@
           let scoreData = p.lastGameScore || { total: 0, detail: '-' };
           if (scoreData.total > highestScore) { highestScore = scoreData.total; winnerName = p.name.toUpperCase(); }
           let overBadge = (p.score >= 100) ? ' <span style="color:#e74c3c; font-weight:bold;">[SKOR 100+]</span>' : '';
-          scoreListHTML += `<div class="score-item"><div class="score-header-row"><span>${p.name.toUpperCase()}${overBadge} (Total: ${p.score || 0}pt)</span><span style="color:var(--gold-light);">${scoreData.total >= 0 ? '+' : ''}${scoreData.total} pt</span></div><div class="score-detail">${scoreData.detail}</div></div>`;
+          
+          let cardsHtml = '';
+          if (p.hand && p.hand.length > 0) {
+            cardsHtml = `<div class="score-cards-preview">`;
+            p.hand.forEach(c => {
+              let isRedClass = (c.suit === '♥' || c.suit === '♦') ? ' red' : '';
+              cardsHtml += `<div class="card${isRedClass}"><div class="card-val">${c.value}</div><div class="card-suit">${c.suit}</div><div class="card-center-suit">${c.suit}</div></div>`;
+            });
+            cardsHtml += `</div>`;
+          } else {
+            cardsHtml = `<div style="font-size:0.65rem; color:#2ecc71; margin-top:4px; font-weight:bold;">✨ Tutup Tangan (Habis)</div>`;
+          }
+
+          scoreListHTML += `<div class="score-item">
+            <div class="score-header-row">
+              <span>${p.name.toUpperCase()}${overBadge} (Total: ${p.score || 0}pt)</span>
+              <span style="color:var(--gold-light);">${scoreData.total >= 0 ? '+' : ''}${scoreData.total} pt</span>
+            </div>
+            <div class="score-detail">${scoreData.detail}</div>
+            <div style="margin-top: 6px; font-size: 0.65rem; color: #ccc; font-weight:600;">Sisa Kartu Belum Jadi:</div>
+            ${cardsHtml}
+          </div>`;
         });
         document.getElementById('winnerTitle').innerText = `PEMENANG: ${winnerName} (${highestScore}pt)`;
         document.getElementById('scoreList').innerHTML = scoreListHTML;
