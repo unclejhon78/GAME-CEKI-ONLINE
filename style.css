@@ -1,14 +1,14 @@
 /* ==========================================================================
-   VARIABLES & GLOBAL SETUP
+   1. VARIABLES & GLOBAL SETUP
    ================================================================---------- */
 :root {
   --bg-felt: #0d3b2e;
   --bg-felt-accent: #155d49;
   --gold: #f39c12;
   --gold-light: #f1c40f;
-  --panel-bg: rgba(10, 25, 20, 0.92);
-  --card-w: 52px;  /* Diperbesar sedikit agar nyaman di HP */
-  --card-h: 76px;  /* Diperbesar sedikit agar nyaman di HP */
+  --panel-bg: rgba(10, 25, 20, 0.95);
+  --card-w: 56px;  /* Ukuran ideal kartu di HP */
+  --card-h: 80px;  /* Ukuran ideal kartu di HP */
   --danger: #e74c3c;
   --success: #2ecc71;
 }
@@ -35,7 +35,7 @@ body {
 }
 
 /* ==========================================================================
-   LOBBY SCREEN (NEON GOREMI)
+   2. LOBBY SCREEN (NEON GOREMI)
    ================================================================---------- */
 #lobby.lobby-neon {
   flex: 1;
@@ -229,7 +229,7 @@ body {
 
 
 /* ==========================================================================
-   GAMEPLAY SCREEN
+   3. GAMEPLAY SCREEN & HEADER
    ================================================================---------- */
 #game {
   display: none;
@@ -304,8 +304,9 @@ body {
   overflow: hidden;
 }
 
+
 /* ==========================================================================
-   OPPONENTS & TABLE CENTER
+   4. OPPONENTS & TABLE CENTER (CANGKUL & BUANGAN)
    ================================================================---------- */
 .opponents-area { display: flex; justify-content: space-around; gap: 6px; margin-bottom: 4px; }
 .opponent-box {
@@ -353,18 +354,18 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin: auto 0;
   background: rgba(0, 0, 0, 0.25);
   border-radius: 12px;
-  padding: 6px 10px;
+  padding: 6px 8px;
   border: 1px dashed rgba(255, 255, 255, 0.15);
   width: 100%;
 }
 .deck-zone, .discard-zone { display: flex; flex-direction: column; align-items: center; }
-.discard-zone { flex: 1; width: 100%; overflow: hidden; max-width: calc(100% - 75px); }
+.discard-zone { flex: 1; width: 100%; overflow: hidden; max-width: calc(100% - 65px); }
 .zone-title {
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #a3b18a;
@@ -385,8 +386,9 @@ body {
   flex-shrink: 0;
 }
 
+
 /* ==========================================================================
-   CARD BASE STYLING
+   5. CARD BASE STYLING (Universal Card)
    ================================================================---------- */
 .card {
   width: var(--card-w);
@@ -404,60 +406,65 @@ body {
   position: relative;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
-  touch-action: pan-y;
+  touch-action: manipulation;
   flex-shrink: 0;
 }
 .card.red { color: #d32f2f; }
 .card.selected { transform: translateY(-10px); border: 2px solid var(--gold); box-shadow: 0 0 10px var(--gold-light); }
 .card.takeable { border: 1.5px solid var(--gold-light); box-shadow: 0 0 6px rgba(241, 196, 15, 0.6); }
 
-.card-val { font-size: 0.75rem; line-height: 1; }
-.card-suit { font-size: 0.8rem; line-height: 1; }
+.card-val { font-size: 0.8rem; line-height: 1; }
+.card-suit { font-size: 0.85rem; line-height: 1; }
 .card-center-suit {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   opacity: 0.85;
 }
 
+
 /* ==========================================================================
-   DISCARD STACK (2-3 Baris Otomatis)
+   6. DISCARD STACK (2-3 Baris Otomatis / Tanpa Slide)
    ================================================================---------- */
 .discard-stack {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: wrap; /* Otomatis turun ke baris berikutnya jika sudah penuh */
   align-items: center;
-  max-height: 140px;
+  max-height: 155px; /* Batasi tinggi agar rapi 2-3 baris */
   width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  gap: 6px !important;
+  gap: 5px !important;
   padding: 4px;
   scrollbar-width: thin;
 }
 .discard-stack::-webkit-scrollbar { width: 4px; }
 .discard-stack::-webkit-scrollbar-thumb { background: rgba(243, 156, 18, 0.5); border-radius: 2px; }
 
+/* Ukuran kartu buangan di area tengah (pas untuk baris bertingkat) */
 .discard-stack .card {
-  width: 46px !important;
-  height: 66px !important;
+  width: 44px !important;
+  height: 64px !important;
   font-size: 11px !important;
   margin-left: 0 !important;
   flex-shrink: 0;
 }
-.discard-stack .card .card-center-suit { font-size: 18px !important; }
+.discard-stack .card .card-val { font-size: 0.65rem !important; }
+.discard-stack .card .card-suit { font-size: 0.7rem !important; }
+.discard-stack .card .card-center-suit { font-size: 1rem !important; }
+
 
 /* ==========================================================================
-   PLAYER DOCK & HAND CARDS (Optimasi HP)
+   7. PLAYER DOCK & KARTU TANGAN (OPTIMASI LAYAR HP AGAR TIDAK KECIL)
    ================================================================---------- */
 .player-dock {
   background: var(--panel-bg);
   border-top: 1.5px solid var(--gold);
-  border-radius: 10px 10px 0 0;
-  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  border-radius: 12px 12px 0 0;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -468,41 +475,45 @@ body {
   display: flex;
   justify-content: flex-start;
   flex-wrap: nowrap;
-  padding: 10px 0;
+  padding: 10px 2px;
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  min-height: 90px;
+  min-height: 100px;
 }
-.hand-cards::-webkit-scrollbar { height: 5px; }
-.hand-cards::-webkit-scrollbar-thumb { background: rgba(243, 156, 18, 0.5); border-radius: 2px; }
+.hand-cards::-webkit-scrollbar { height: 6px; }
+.hand-cards::-webkit-scrollbar-thumb { background: rgba(243, 156, 18, 0.6); border-radius: 3px; }
 
-/* Kartu di tangan pemain HP (Dibuat overlap tipis -16px agar muat banyak tapi tetap lebar & jelas) */
+/* KARTU DI TANGAN PEMAIN HP: Diperbesar proporsional & overlap rapi (-18px) */
 .hand-cards .card {
-  width: 52px !important;
-  height: 76px !important;
-  margin-left: -16px;
+  width: 58px !important;
+  height: 84px !important;
+  margin-left: -18px;
   flex-shrink: 0;
 }
 .hand-cards .card:first-child { margin-left: 0; }
+.hand-cards .card .card-val { font-size: 0.85rem !important; }
+.hand-cards .card .card-suit { font-size: 0.9rem !important; }
+.hand-cards .card .card-center-suit { font-size: 1.3rem !important; }
+
 
 /* ==========================================================================
-   ACTION BAR & BUTTONS
+   8. ACTION BAR & TOMBOL
    ================================================================---------- */
-.action-bar { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; justify-content: center; width: 100%; }
+.action-bar { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; justify-content: center; width: 100%; }
 
 .btn-action {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: #fff;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-radius: 12px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   flex: 1 1 auto;
-  min-width: 55px;
+  min-width: 60px;
   text-align: center;
 }
 .btn-action.active { background: var(--gold); color: #000; border-color: var(--gold-light); }
@@ -510,14 +521,13 @@ body {
 .btn-action.danger { background: var(--danger); color: #fff; border-color: #c0392b; }
 .btn-action.warning { background: #e67e22; color: #fff; border-color: #d35400; }
 
+
 /* ==========================================================================
-   CHAT & SIDEBAR
+   9. CHAT, SIDEBAR & MODAL
    ================================================================---------- */
 .chat-sidebar {
   position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
+  right: 0; top: 0; bottom: 0;
   width: 250px;
   background: var(--panel-bg);
   border-left: 1px solid rgba(243, 156, 18, 0.3);
@@ -574,9 +584,6 @@ body {
 .btn-mic.active { background: #2ecc71; border-color: #fff; box-shadow: 0 0 8px #2ecc71; }
 .btn-mic.muted { background: #e74c3c; border-color: #fff; box-shadow: 0 0 8px #e74c3c; }
 
-/* ==========================================================================
-   MODALS & POPUPS
-   ================================================================---------- */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -663,22 +670,23 @@ body {
 @keyframes popInOpponent { to { transform: translateX(-50%) scale(1); } }
 @keyframes popInMy { to { transform: scale(1); } }
 
+
 /* ==========================================================================
-   DESKTOP / LAPTOP OPTIMIZATION (min-width: 768px)
+   10. DESKTOP / LAPTOP OPTIMIZATION (min-width: 768px)
    ================================================================---------- */
 @media (min-width: 768px) {
   :root {
-    --card-w: 60px;
-    --card-h: 88px;
+    --card-w: 66px;
+    --card-h: 96px;
   }
   .chat-sidebar { position: relative; transform: none; width: 250px; }
-  .card-val { font-size: 0.9rem; }
-  .card-suit { font-size: 0.95rem; }
-  .card-center-suit { font-size: 1.4rem; }
+  .card-val { font-size: 0.95rem; }
+  .card-suit { font-size: 1rem; }
+  .card-center-suit { font-size: 1.5rem; }
   .discard-stack .card {
-    width: 54px !important;
-    height: 78px !important;
+    width: 58px !important;
+    height: 84px !important;
   }
-  .hand-cards .card { margin-left: -20px; }
-  .btn-action { font-size: 0.75rem; padding: 6px 10px; }
+  .hand-cards .card { margin-left: -22px; }
+  .btn-action { font-size: 0.78rem; padding: 7px 12px; }
 }
