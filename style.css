@@ -111,60 +111,41 @@ body {
 .card-suit { font-size: 0.75rem; line-height: 1; }
 .card-center-suit { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1rem; opacity: 0.85; }
 
-/* ================= DISCARD STACK & TOMBOL AKSI UTAMA (MOBILE OPTIMIZED) ================= */
+/* DISCARD STACK YANG BISA DI-SLIDE / SCROLL HORIZONTAL DI HP */
 .discard-stack {
-  display: flex;
+display: flex;
   flex-direction: row;
+  flex-wrap: wrap; /* Membuat kartu otomatis turun ke baris berikutnya */
   align-items: center;
-  min-height: var(--card-h);
+  max-height: 125px; /* Batasi tinggi maksimal agar pas 2-3 baris */
   width: 100%;
-  gap: 12px !important;
-  padding: 10px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  white-space: nowrap;
+  overflow-y: auto; /* Scroll vertikal jika lebih dari 3 baris */
+  overflow-x: hidden;
+  gap: 6px !important;
+  padding: 4px;
   scrollbar-width: thin;
 }
-.discard-stack::-webkit-scrollbar { height: 4px; }
-.discard-stack::-webkit-scrollbar-thumb { background: rgba(243, 156, 18, 0.5); border-radius: 2px; }
+
+.discard-stack::-webkit-scrollbar {
+  width: 4px;
+}
+
+.discard-stack::-webkit-scrollbar-thumb {
+  background: rgba(243, 156, 18, 0.5);
+  border-radius: 2px;
+}
+
 .discard-stack .card {
-  width: 68px !important;
-  height: 98px !important;
-  font-size: 15px !important;
-  margin-left: -20px;
+  width: 52px !important;  /* Sedikit disesuaikan agar rapi berjajar beberapa kolom */
+  height: 74px !important;
+  font-size: 13px !important;
+  margin-left: 0 !important; /* Hilangkan efek tumpuk menyamping (-20px) */
   flex-shrink: 0;
 }
-.discard-stack .card:first-child { margin-left: 0; }
+
 .discard-stack .card .card-center-suit {
-  font-size: 28px !important;
+  font-size: 22px !important;
 }
-
-/* TOMBOL AKSI UTAMA DI SAMPING (DEFAULT MERAH, GO HIJAU) */
-.btn-discard-box {
-  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-  color: white !important;
-  font-weight: bold !important;
-  padding: 14px 20px !important;
-  font-size: 15px !important;
-  border-radius: 12px !important;
-  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4) !important;
-  border: 2px solid #ff7675 !important;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-.btn-discard-box.go-active {
-  background: linear-gradient(135deg, #27ae60, #2ecc71) !important;
-  border-color: #2ecc71 !important;
-  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.5) !important;
-}
-.btn-discard-box:active {
-  transform: scale(0.95);
-}
-
 .player-dock { background: var(--panel-bg); border-top: 1.5px solid var(--gold); border-radius: 10px 10px 0 0; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; position: relative; }
 .hand-cards { display: flex; justify-content: flex-start; flex-wrap: nowrap; padding: 8px 0; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .hand-cards::-webkit-scrollbar { height: 4px; }
@@ -179,7 +160,6 @@ body {
 .btn-action.danger { background: var(--danger); color: #fff; border-color: #c0392b; }
 .btn-action.warning { background: #e67e22; color: #fff; border-color: #d35400; }
 
-/* ================= CHAT & MODAL STYLING ================= */
 .chat-sidebar { position: absolute; right: 0; top: 0; bottom: 0; width: 250px; background: var(--panel-bg); border-left: 1px solid rgba(243, 156, 18, 0.3); display: flex; flex-direction: column; z-index: 30; transform: translateX(100%); transition: transform 0.3s ease-in-out; }
 .chat-sidebar.open { transform: translateX(0); }
 .chat-header { padding: 8px; background: rgba(0,0,0,0.4); border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; font-weight: bold; }
@@ -199,57 +179,6 @@ body {
 .score-item { display: flex; flex-direction: column; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.75rem; }
 .score-header-row { display: flex; justify-content: space-between; font-weight: bold; }
 .score-detail { font-size: 0.65rem; color: #aaa; margin-top: 1px; }
-
-/* TAMPILAN SISA KARTU BELUM JADI DI MODAL SKOR */
-.score-cards-preview {
-  display: flex !important;
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  gap: 0px !important;
-  margin-top: 8px !important;
-  overflow-x: auto !important;
-  padding: 4px 2px;
-}
-.score-cards-preview .card {
-  width: 36px !important;
-  height: 52px !important;
-  font-size: 0.55rem !important;
-  padding: 2px !important;
-  margin-left: -12px !important;
-  flex-shrink: 0 !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-  background: #fff;
-  color: #111;
-  border-radius: 4px;
-  border: 1px solid #ccc;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
-}
-.score-cards-preview .card.red {
-  color: #d32f2f;
-}
-.score-cards-preview .card:first-child {
-  margin-left: 0 !important;
-}
-.score-cards-preview .card .card-val {
-  font-size: 0.6rem !important;
-  line-height: 1;
-}
-.score-cards-preview .card .card-suit {
-  font-size: 0.65rem !important;
-  line-height: 1;
-}
-.score-cards-preview .card .card-center-suit {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 0.9rem !important;
-  opacity: 0.85;
-}
-
 .confirm-cards-preview { display: flex; justify-content: center; gap: 4px; margin: 10px 0; flex-wrap: wrap; }
 .modal-btns { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
 
